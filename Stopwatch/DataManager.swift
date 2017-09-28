@@ -82,10 +82,25 @@ class DataManager {
         self.uuid = serialNumberAsCFString!.takeUnretainedValue() as! String
     }
     
-    func getTotalTime(completion: ((Double?) -> Void)) {
-        guard let db = self.openDBConnection() else {
-            completion(nil)
+    private func createDeviceInDatabaseIfNeeded(db: Connection) throws {
+        // check if the device exists
+        let devices = Table("devices")
+        let query = devices.filter(.uuid == self.uuid).count
+        let count = try db.scalar(query)
+        
+        if count > 0 {
+            // device exists!
             return
+        }
+        
+        // else... create device
+        try db.run(devices.insert(.uuid <- self.uuid, .baseHours <- 0))
+    }
+    
+    func getTotalTime() -> Double? {
+        guard let db = self.openDBConnection(),
+            let _ = try? self.createDeviceInDatabaseIfNeeded(db: db) else {
+                return nil
         }
         
         // time in hours
@@ -94,28 +109,18 @@ class DataManager {
         // first, add up current times of all devices
         let devices = Table("devices")
         guard let dquery = try? db.prepare(devices) else {
-            completion(nil)
-            return
+            return nil
         }
         
-        var selfExists = false
         for device in dquery {
             totalTime += device[.baseHours]
-            if device[.uuid] == self.uuid {
-                selfExists = true
-            }
-        }
-        
-        if !selfExists {
-            self.insertDeviceIntoDatabase()
         }
         
         // now go through the sessions
         let sessionsTable = Table("sessions")
         _=sessionsTable.order(Expression<Double>.startTime.asc)
         guard let squery = try? db.prepare(sessionsTable) else {
-            completion(totalTime)
-            return
+            return totalTime
         }
         
         var sessions: [Session] = []
@@ -145,20 +150,7 @@ class DataManager {
             totalTime += session.hours
         }
         
-        completion(totalTime)
-    }
-    
-    private func insertDeviceIntoDatabase() {
-        guard let db = self.openDBConnection() else {
-            return
-        }
-        
-        let devices = Table("devices")
-        do {
-            try db.run(devices.insert(.uuid <- self.uuid, .baseHours <- 0))
-        } catch {
-            print("error: \(error)")
-        }
+        return totalTime
     }
     
     func logSession(startTime: Date, hours: Double) {

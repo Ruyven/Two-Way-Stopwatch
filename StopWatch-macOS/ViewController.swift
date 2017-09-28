@@ -9,7 +9,7 @@
 import Cocoa
 
 class ViewController: NSViewController {
-
+    
     @IBOutlet weak var valueLabel: NSTextField! {
         didSet {
             valueLabel.font = NSFont.monospacedDigitSystemFont(ofSize: 40, weight: NSFont.Weight.regular)
@@ -20,14 +20,7 @@ class ViewController: NSViewController {
         super.viewDidLoad()
 
         // Do any additional setup after loading the view.
-        DataManager.manager.getTotalTime { value in
-            guard let value = value else {
-                return
-            }
-            
-            self.value = value
-            self.updateDisplay()
-        }
+        self.updateDisplay()
     }
 
     override var representedObject: Any? {
@@ -36,56 +29,26 @@ class ViewController: NSViewController {
         }
     }
     
-    var value: Double = 0 // hours
-    var displayTimer: Timer?
-    var startTime: Date = Date()
-    var direction: Double = 0
+    let timingController = TimingController()
     
-    var isRunning: Bool {
-        return self.direction != 0
-    }
-
+    var displayTimer: Timer?
+    
     @IBAction func startForward(_ sender: Any) {
-        if self.isRunning {
-            self.pause()
-        }
-        self.startTime = Date()
-        self.direction = 1
+        timingController.startForward()
         self.displayTimer = Timer.scheduledTimer(timeInterval: 0.05, target: self, selector: #selector(updateDisplay), userInfo: nil, repeats: true)
     }
     @IBAction func startBackward(_ sender: Any) {
-        if self.isRunning {
-            self.pause()
-        }
-        self.startTime = Date()
-        self.direction = -1
+        timingController.startBackward()
         self.displayTimer = Timer.scheduledTimer(timeInterval: 0.05, target: self, selector: #selector(updateDisplay), userInfo: nil, repeats: true)
     }
     
-    // seconds
-    var currentTime: Double {
-        return Date().timeIntervalSince(self.startTime) * self.direction
-    }
-    
-    var valuePlusCurrent: Double {
-        return self.value + self.currentTime / 3600     // hours
-    }
-    
     @IBAction func pause(_ sender: Any? = nil) {
-        guard self.isRunning else {
-            return
-        }
-        
-        DataManager.manager.logSession(startTime: self.startTime, hours: self.currentTime/3600)
-        
-        self.value = self.valuePlusCurrent
-
+        timingController.pause()
         self.displayTimer?.invalidate()
-        self.direction = 0
     }
     
     @objc func updateDisplay() {
-        var time = self.valuePlusCurrent
+        var time = timingController.currentTime
         
         let vorzeichen: String
         if time >= 0 {
