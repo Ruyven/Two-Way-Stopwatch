@@ -9,6 +9,10 @@
 /* Begin PBXBuildFile section */
 		FA597E7F1F7C9FDB0057BD8C /* SQLite.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FA597E7D1F7C9D020057BD8C /* SQLite.framework */; };
 		FA597E821F7CA0200057BD8C /* SQLite.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = FA597E801F7CA0200057BD8C /* SQLite.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		FA597E841F7CAAFC0057BD8C /* SwiftyDropbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FA597E831F7CAAFC0057BD8C /* SwiftyDropbox.framework */; };
+		FA597E851F7CAAFC0057BD8C /* SwiftyDropbox.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = FA597E831F7CAAFC0057BD8C /* SwiftyDropbox.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		FA597E871F7CAB030057BD8C /* Alamofire.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FA597E861F7CAB030057BD8C /* Alamofire.framework */; };
+		FA597E881F7CAB030057BD8C /* Alamofire.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = FA597E861F7CAB030057BD8C /* Alamofire.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		FA6E77F51F7B88B800880181 /* db.sqlite3 in Resources */ = {isa = PBXBuildFile; fileRef = FAC353BA1F7A9AD400F8703B /* db.sqlite3 */; };
 		FA8A14641F77DDBD00C11EEE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA8A14631F77DDBD00C11EEE /* AppDelegate.swift */; };
 		FA8A14661F77DDBD00C11EEE /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA8A14651F77DDBD00C11EEE /* ViewController.swift */; };
@@ -26,6 +30,8 @@
 			dstSubfolderSpec = 10;
 			files = (
 				FA597E821F7CA0200057BD8C /* SQLite.framework in Embed Frameworks */,
+				FA597E881F7CAB030057BD8C /* Alamofire.framework in Embed Frameworks */,
+				FA597E851F7CAAFC0057BD8C /* SwiftyDropbox.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -35,7 +41,9 @@
 /* Begin PBXFileReference section */
 		FA597E7D1F7C9D020057BD8C /* SQLite.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SQLite.framework; path = Carthage/Build/Mac/SQLite.framework; sourceTree = "<group>"; };
 		FA597E801F7CA0200057BD8C /* SQLite.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SQLite.framework; path = Carthage/Build/Mac/SQLite.framework; sourceTree = "<group>"; };
-		FA8A14601F77DDBD00C11EEE /* Stopwatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Stopwatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		FA597E831F7CAAFC0057BD8C /* SwiftyDropbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftyDropbox.framework; path = Carthage/Build/Mac/SwiftyDropbox.framework; sourceTree = "<group>"; };
+		FA597E861F7CAB030057BD8C /* Alamofire.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Alamofire.framework; path = Carthage/Build/Mac/Alamofire.framework; sourceTree = "<group>"; };
+		FA8A14601F77DDBD00C11EEE /* TwoWayStopwatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TwoWayStopwatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		FA8A14631F77DDBD00C11EEE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		FA8A14651F77DDBD00C11EEE /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
 		FA8A14681F77DDBD00C11EEE /* Stopwatch.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = Stopwatch.xcdatamodel; sourceTree = "<group>"; };
@@ -53,6 +61,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				FA597E7F1F7C9FDB0057BD8C /* SQLite.framework in Frameworks */,
+				FA597E871F7CAB030057BD8C /* Alamofire.framework in Frameworks */,
+				FA597E841F7CAAFC0057BD8C /* SwiftyDropbox.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -70,6 +80,8 @@
 		FA8A14571F77DDBD00C11EEE = {
 			isa = PBXGroup;
 			children = (
+				FA597E861F7CAB030057BD8C /* Alamofire.framework */,
+				FA597E831F7CAAFC0057BD8C /* SwiftyDropbox.framework */,
 				FA597E801F7CA0200057BD8C /* SQLite.framework */,
 				FA8A14621F77DDBD00C11EEE /* Stopwatch */,
 				FA8A14611F77DDBD00C11EEE /* Products */,
@@ -80,7 +92,7 @@
 		FA8A14611F77DDBD00C11EEE /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				FA8A14601F77DDBD00C11EEE /* Stopwatch.app */,
+				FA8A14601F77DDBD00C11EEE /* TwoWayStopwatch.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -104,9 +116,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		FA8A145F1F77DDBD00C11EEE /* Stopwatch */ = {
+		FA8A145F1F77DDBD00C11EEE /* TwoWayStopwatch */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = FA8A14731F77DDBD00C11EEE /* Build configuration list for PBXNativeTarget "Stopwatch" */;
+			buildConfigurationList = FA8A14731F77DDBD00C11EEE /* Build configuration list for PBXNativeTarget "TwoWayStopwatch" */;
 			buildPhases = (
 				FA8A145C1F77DDBD00C11EEE /* Sources */,
 				FA8A145D1F77DDBD00C11EEE /* Frameworks */,
@@ -117,9 +129,9 @@
 			);
 			dependencies = (
 			);
-			name = Stopwatch;
+			name = TwoWayStopwatch;
 			productName = Stopwatch;
-			productReference = FA8A14601F77DDBD00C11EEE /* Stopwatch.app */;
+			productReference = FA8A14601F77DDBD00C11EEE /* TwoWayStopwatch.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -138,7 +150,7 @@
 					};
 				};
 			};
-			buildConfigurationList = FA8A145B1F77DDBD00C11EEE /* Build configuration list for PBXProject "Stopwatch" */;
+			buildConfigurationList = FA8A145B1F77DDBD00C11EEE /* Build configuration list for PBXProject "TwoWayStopwatch" */;
 			compatibilityVersion = "Xcode 8.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -151,7 +163,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				FA8A145F1F77DDBD00C11EEE /* Stopwatch */,
+				FA8A145F1F77DDBD00C11EEE /* TwoWayStopwatch */,
 			);
 		};
 /* End PBXProject section */
@@ -315,7 +327,7 @@
 				);
 				INFOPLIST_FILE = Stopwatch/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = com.ruyven.Stopwatch;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ruyven.TwoWayStopwatch;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 4.0;
 			};
@@ -335,7 +347,7 @@
 				);
 				INFOPLIST_FILE = Stopwatch/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = com.ruyven.Stopwatch;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ruyven.TwoWayStopwatch;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 4.0;
 			};
@@ -344,7 +356,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		FA8A145B1F77DDBD00C11EEE /* Build configuration list for PBXProject "Stopwatch" */ = {
+		FA8A145B1F77DDBD00C11EEE /* Build configuration list for PBXProject "TwoWayStopwatch" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				FA8A14711F77DDBD00C11EEE /* Debug */,
@@ -353,7 +365,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		FA8A14731F77DDBD00C11EEE /* Build configuration list for PBXNativeTarget "Stopwatch" */ = {
+		FA8A14731F77DDBD00C11EEE /* Build configuration list for PBXNativeTarget "TwoWayStopwatch" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				FA8A14741F77DDBD00C11EEE /* Debug */,
