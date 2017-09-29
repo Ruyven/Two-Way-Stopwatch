@@ -48,6 +48,7 @@ class ViewController: NSViewController {
     }
     
     @objc func updateDisplay() {
+        //FIXME: This should all happen in TimingController. All I need is to get the string.
         var time = timingController.currentTime
         
         let vorzeichen: String

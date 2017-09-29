@@ -10,6 +10,7 @@ import Cocoa
 import IOKit
 
 import SQLite
+import SwiftyDropbox
 
 class DataManager {
     static var manager = DataManager()
@@ -117,9 +118,8 @@ class DataManager {
         }
         
         // now go through the sessions
-        let sessionsTable = Table("sessions")
-        _=sessionsTable.order(Expression<Double>.startTime.asc)
-        guard let squery = try? db.prepare(sessionsTable) else {
+        let sessionsQuery = Table("sessions").order(Expression<Double>.startTime.asc)
+        guard let squery = try? db.prepare(sessionsQuery) else {
             return totalTime
         }
         
@@ -133,14 +133,15 @@ class DataManager {
         var filteredSessions = [Session]()
         let forwardSessions = sessions.filter({$0.direction > 0})
         let backwardSessions = sessions.filter({$0.direction < 0})
-        for sessions in [forwardSessions, backwardSessions] {
-            for (i, session) in sessions.enumerated() {
-                var adjSession = session
-                if i < sessions.count - 1 {
-                    let nextSession = sessions[i+1]
-                    if nextSession.startTime < adjSession.endTime {
-                        adjSession.endTime = nextSession.startTime
+        for _sessions in [forwardSessions, backwardSessions] {
+            var sessions = _sessions
+            while sessions.count > 0 {
+                var adjSession = sessions.removeFirst()
+                while let nextSession = sessions.first, nextSession.startTime < adjSession.endTime {
+                    if nextSession.endTime > adjSession.endTime {
+                        adjSession.endTime = nextSession.endTime
                     }
+                    _=sessions.removeFirst()
                 }
                 filteredSessions.append(adjSession)
             }
@@ -163,6 +164,66 @@ class DataManager {
             try db.run(sessions.insert(.device_uuid <- self.uuid, .startTime <- startTime, .hours <- hours))    // note that hours might be negative. The session duration is abs(hours).
         } catch {
             print("logSession: \(error)")
+        }
+        
+        self.syncWithDropbox()
+    }
+    
+    // MARK: - Dropbox Sync
+    
+    func syncWithDropbox() {
+        var client: DropboxClient! = DropboxClientsManager.authorizedClient
+        
+        if client == nil {
+            client = DropboxClient(accessToken: "DROPBOX_ACCESS_TOKEN") // insert real token here
+            DropboxClientsManager.authorizedClient = client
+        }
+        
+        // upload: generate data for my device
+        
+        let uuid = self.uuid
+        
+        guard let db = self.openDBConnection() else {
+            return
+        }
+        
+        let deviceQuery = Table("devices").where(.uuid == uuid)
+        guard let omeDevice = try? db.pluck(deviceQuery), let meDevice = omeDevice else {
+            // this device is not in the database ~> nothing to upload!
+            return
+        }
+        
+        let baseHours = meDevice[.baseHours]
+        
+        
+        // now get all of this device's sessions
+        let sessionsQuery = Table("sessions").where(.device_uuid == uuid)
+        guard let squery = try? db.prepare(sessionsQuery) else {
+            return
+        }
+        
+        var sessions: [Session] = []
+        
+        for session in squery {
+            sessions.append(Session(startTime: session[.startTime], hours: session[.hours]))
+        }
+        
+        let myDeviceDict = ["uuid": uuid, "baseHours": baseHours, "sessions": sessions.map({ ["startTime": $0.startTime.timeIntervalSinceReferenceDate, "hours": $0.hours] })] as [String : Any]
+        
+        guard let jsonData = try? JSONSerialization.data(withJSONObject: myDeviceDict, options: JSONSerialization.WritingOptions()) else {
+            return      // well that didn't work
+        }
+        
+        client.files.upload(path: "/\(uuid).json", mode: .overwrite, input: jsonData)
+            .response { response, error in
+                if let response = response {
+                    print(response)
+                } else if let error = error {
+                    print(error)
+                }
+            }
+            .progress { progressData in
+                print(progressData)
         }
     }
 }

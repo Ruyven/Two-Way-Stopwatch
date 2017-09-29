@@ -7,14 +7,13 @@
 //
 
 import Cocoa
+import SwiftyDropbox
 
 @NSApplicationMain
 class AppDelegate: NSObject, NSApplicationDelegate {
 
-
-
     func applicationDidFinishLaunching(_ aNotification: Notification) {
-        // Insert code here to initialize your application
+        DropboxClientsManager.setupWithAppKeyDesktop("j5z0w8g5tu9amxc")
     }
 
     func applicationWillTerminate(_ aNotification: Notification) {

@@ -13,18 +13,20 @@
 		FA047A7C1F7D461F00822F35 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = FA047A7B1F7D461F00822F35 /* Assets.xcassets */; };
 		FA047A7F1F7D461F00822F35 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = FA047A7D1F7D461F00822F35 /* LaunchScreen.storyboard */; };
 		FA0A292B1F7D433B00F04150 /* TimingController.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA0A292A1F7D433B00F04150 /* TimingController.swift */; };
-		FA597E7F1F7C9FDB0057BD8C /* SQLite.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FA597E7D1F7C9D020057BD8C /* SQLite.framework */; };
-		FA597E821F7CA0200057BD8C /* SQLite.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = FA597E801F7CA0200057BD8C /* SQLite.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		FA597E841F7CAAFC0057BD8C /* SwiftyDropbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FA597E831F7CAAFC0057BD8C /* SwiftyDropbox.framework */; };
-		FA597E851F7CAAFC0057BD8C /* SwiftyDropbox.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = FA597E831F7CAAFC0057BD8C /* SwiftyDropbox.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		FA597E871F7CAB030057BD8C /* Alamofire.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FA597E861F7CAB030057BD8C /* Alamofire.framework */; };
-		FA597E881F7CAB030057BD8C /* Alamofire.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = FA597E861F7CAB030057BD8C /* Alamofire.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		FA6E77F51F7B88B800880181 /* db.sqlite3 in Resources */ = {isa = PBXBuildFile; fileRef = FAC353BA1F7A9AD400F8703B /* db.sqlite3 */; };
 		FA8A14641F77DDBD00C11EEE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA8A14631F77DDBD00C11EEE /* AppDelegate.swift */; };
 		FA8A14661F77DDBD00C11EEE /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA8A14651F77DDBD00C11EEE /* ViewController.swift */; };
 		FA8A146B1F77DDBD00C11EEE /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = FA8A146A1F77DDBD00C11EEE /* Assets.xcassets */; };
 		FA8A146E1F77DDBD00C11EEE /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = FA8A146C1F77DDBD00C11EEE /* Main.storyboard */; };
 		FAC353BC1F7A9B0D00F8703B /* DataManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAC353BB1F7A9B0D00F8703B /* DataManager.swift */; };
+		FAEB4B461F7E97DF002FCD4A /* Alamofire.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = FAEB4B431F7E97C4002FCD4A /* Alamofire.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		FAEB4B471F7E97DF002FCD4A /* JASON.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = FAEB4B441F7E97C4002FCD4A /* JASON.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		FAEB4B481F7E97DF002FCD4A /* SQLite.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = FAEB4B421F7E97C4002FCD4A /* SQLite.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		FAEB4B491F7E97DF002FCD4A /* SwiftyDropbox.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = FAEB4B451F7E97C4002FCD4A /* SwiftyDropbox.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		FAEB4B4A1F7E97E2002FCD4A /* Alamofire.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FAEB4B431F7E97C4002FCD4A /* Alamofire.framework */; };
+		FAEB4B4B1F7E97E2002FCD4A /* JASON.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FAEB4B441F7E97C4002FCD4A /* JASON.framework */; };
+		FAEB4B4C1F7E97E2002FCD4A /* SQLite.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FAEB4B421F7E97C4002FCD4A /* SQLite.framework */; };
+		FAEB4B4D1F7E97E2002FCD4A /* SwiftyDropbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FAEB4B451F7E97C4002FCD4A /* SwiftyDropbox.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -34,9 +36,10 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				FA597E821F7CA0200057BD8C /* SQLite.framework in Embed Frameworks */,
-				FA597E881F7CAB030057BD8C /* Alamofire.framework in Embed Frameworks */,
-				FA597E851F7CAAFC0057BD8C /* SwiftyDropbox.framework in Embed Frameworks */,
+				FAEB4B461F7E97DF002FCD4A /* Alamofire.framework in Embed Frameworks */,
+				FAEB4B471F7E97DF002FCD4A /* JASON.framework in Embed Frameworks */,
+				FAEB4B481F7E97DF002FCD4A /* SQLite.framework in Embed Frameworks */,
+				FAEB4B491F7E97DF002FCD4A /* SwiftyDropbox.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -52,10 +55,6 @@
 		FA047A7E1F7D461F00822F35 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		FA047A801F7D461F00822F35 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		FA0A292A1F7D433B00F04150 /* TimingController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimingController.swift; sourceTree = "<group>"; };
-		FA597E7D1F7C9D020057BD8C /* SQLite.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SQLite.framework; path = Carthage/Build/Mac/SQLite.framework; sourceTree = "<group>"; };
-		FA597E801F7CA0200057BD8C /* SQLite.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SQLite.framework; path = Carthage/Build/Mac/SQLite.framework; sourceTree = "<group>"; };
-		FA597E831F7CAAFC0057BD8C /* SwiftyDropbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftyDropbox.framework; path = Carthage/Build/Mac/SwiftyDropbox.framework; sourceTree = "<group>"; };
-		FA597E861F7CAB030057BD8C /* Alamofire.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Alamofire.framework; path = Carthage/Build/Mac/Alamofire.framework; sourceTree = "<group>"; };
 		FA8A14601F77DDBD00C11EEE /* TwoWayStopwatch Mac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "TwoWayStopwatch Mac.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		FA8A14631F77DDBD00C11EEE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		FA8A14651F77DDBD00C11EEE /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
@@ -65,6 +64,10 @@
 		FA8A14701F77DDBD00C11EEE /* Stopwatch.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Stopwatch.entitlements; sourceTree = "<group>"; };
 		FAC353BA1F7A9AD400F8703B /* db.sqlite3 */ = {isa = PBXFileReference; lastKnownFileType = file; path = db.sqlite3; sourceTree = "<group>"; };
 		FAC353BB1F7A9B0D00F8703B /* DataManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataManager.swift; sourceTree = "<group>"; };
+		FAEB4B421F7E97C4002FCD4A /* SQLite.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SQLite.framework; path = Carthage/Build/Mac/SQLite.framework; sourceTree = "<group>"; };
+		FAEB4B431F7E97C4002FCD4A /* Alamofire.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Alamofire.framework; path = Carthage/Build/Mac/Alamofire.framework; sourceTree = "<group>"; };
+		FAEB4B441F7E97C4002FCD4A /* JASON.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JASON.framework; path = Carthage/Build/Mac/JASON.framework; sourceTree = "<group>"; };
+		FAEB4B451F7E97C4002FCD4A /* SwiftyDropbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftyDropbox.framework; path = Carthage/Build/Mac/SwiftyDropbox.framework; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -79,9 +82,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				FA597E7F1F7C9FDB0057BD8C /* SQLite.framework in Frameworks */,
-				FA597E871F7CAB030057BD8C /* Alamofire.framework in Frameworks */,
-				FA597E841F7CAAFC0057BD8C /* SwiftyDropbox.framework in Frameworks */,
+				FAEB4B4A1F7E97E2002FCD4A /* Alamofire.framework in Frameworks */,
+				FAEB4B4B1F7E97E2002FCD4A /* JASON.framework in Frameworks */,
+				FAEB4B4C1F7E97E2002FCD4A /* SQLite.framework in Frameworks */,
+				FAEB4B4D1F7E97E2002FCD4A /* SwiftyDropbox.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -116,7 +120,10 @@
 		FA597E7C1F7C9D020057BD8C /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				FA597E7D1F7C9D020057BD8C /* SQLite.framework */,
+				FAEB4B431F7E97C4002FCD4A /* Alamofire.framework */,
+				FAEB4B441F7E97C4002FCD4A /* JASON.framework */,
+				FAEB4B421F7E97C4002FCD4A /* SQLite.framework */,
+				FAEB4B451F7E97C4002FCD4A /* SwiftyDropbox.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -124,9 +131,6 @@
 		FA8A14571F77DDBD00C11EEE = {
 			isa = PBXGroup;
 			children = (
-				FA597E861F7CAB030057BD8C /* Alamofire.framework */,
-				FA597E831F7CAAFC0057BD8C /* SwiftyDropbox.framework */,
-				FA597E801F7CA0200057BD8C /* SQLite.framework */,
 				FA8A14621F77DDBD00C11EEE /* Stopwatch */,
 				FA047A841F7D46A500822F35 /* StopWatch-macOS */,
 				FA047A731F7D461F00822F35 /* Stopwatch-iOS */,
@@ -453,7 +457,6 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_ENTITLEMENTS = "Stopwatch-macOS/Stopwatch.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				DEVELOPMENT_TEAM = XXK487QHW5;
@@ -473,7 +476,6 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_ENTITLEMENTS = "Stopwatch-macOS/Stopwatch.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				DEVELOPMENT_TEAM = XXK487QHW5;
