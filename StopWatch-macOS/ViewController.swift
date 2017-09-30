@@ -22,6 +22,7 @@ class ViewController: NSViewController {
         self.updateDisplay()
         
         NotificationCenter.default.addObserver(self, selector: #selector(updateDisplay), name: .baseTimeUpdated, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(startDisplayTimer), name: .startUpdatingDisplay, object: nil)
     }
 
     override var representedObject: Any? {
@@ -33,6 +34,11 @@ class ViewController: NSViewController {
     var timingController: TimingController { return TimingController.controller }
     
     var displayTimer: Timer?
+    
+    @objc func startDisplayTimer() {
+        self.displayTimer?.invalidate() // in case it's already running
+        self.displayTimer = Timer.scheduledTimer(timeInterval: 0.05, target: self, selector: #selector(updateDisplay), userInfo: nil, repeats: true)
+    }
     
     @IBAction func startForward(_ sender: Any) {
         timingController.startForward()

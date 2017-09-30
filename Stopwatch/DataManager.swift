@@ -55,7 +55,24 @@ class DataManager {
             
             let db = try? Connection("\(path)/\(Constants.dbFilename)")
             self.dbConnection = db
+            
+            if let db = db {
+                self.migrateDBIfNeeded(db)
+            }
+            
             return db
+        }
+    }
+    
+    func migrateDBIfNeeded(_ db: Connection) {
+        do {
+            if db.userVersion < 1 {
+                // migrate to v1: add column activeSessionDirection
+                try db.run(Table("devices").addColumn(.activeSessionDirection))
+                db.userVersion = 1
+            }
+        } catch {
+            print("Migration failed :(")
         }
     }
     
@@ -70,9 +87,7 @@ class DataManager {
     
     private func createDeviceInDatabaseIfNeeded(db: Connection, uuid: String) throws {
         // check if the device exists
-        let devices = Table("devices")
-        let query = devices.filter(.uuid == uuid).count
-        let count = try db.scalar(query)
+        let count = try db.scalar(Table("devices").filter(.uuid == uuid).count)
         
         if count > 0 {
             // device exists!
@@ -80,8 +95,10 @@ class DataManager {
         }
         
         // else... create device
-        try db.run(devices.insert(.uuid <- uuid, .baseHours <- 0))
+        try db.run(Table("devices").insert(.uuid <- uuid, .baseHours <- 0))
     }
+    
+    private lazy var thisDeviceQuery = Table("devices").filter(.uuid == self.uuid)
     
     func getTotalTime() -> Double? {
         guard let db = self.openDBConnection(),
@@ -137,6 +154,46 @@ class DataManager {
         }
         
         return totalTime
+    }
+    
+    func startActiveSession(startTime: Date, direction: Int) {
+        do {
+            guard let db = self.openDBConnection() else {
+                return
+            }
+            try self.createDeviceInDatabaseIfNeeded(db: db, uuid: self.uuid)
+            
+            try db.run(thisDeviceQuery.update(.activeSessionSince <- startTime))
+            try db.run(thisDeviceQuery.update(.activeSessionDirection <- direction))
+        } catch {
+            print(error)
+        }
+    }
+    
+    func stopActiveSession() {
+        do {
+            guard let db = self.openDBConnection() else {
+                return
+            }
+            
+            try db.run(thisDeviceQuery.update(.activeSessionSince <- nil))
+            try db.run(thisDeviceQuery.update(.activeSessionDirection <- nil))
+        } catch {
+            print(error)
+        }
+    }
+    
+    func tryContinueDBSession(_ completion: @escaping (((Date, Int)?) -> Void)) {
+        do {
+            guard let db = self.openDBConnection(), let deviceRow = try db.pluck(thisDeviceQuery) else {
+                return
+            }
+            if let since = deviceRow[.activeSessionSince], let direction = deviceRow[.activeSessionDirection], direction != 0 {
+                completion((since, direction))
+            }
+        } catch {
+            print(error)
+        }
     }
     
     func logSession(startTime: Date, hours: Double) {
@@ -230,13 +287,11 @@ class DataManager {
     
     private func dropboxSyncDownload() {
         // now download jsonData from all other devices
-        var dataUpdated = false
         
         // first: get a list of all devices we have in Dropbox
-        
         self.dropboxClient.files.listFolder(path: "").response { response, error in
             guard let result = response else {
-                print(error)
+                print(error as Any)
                 return
             }
             
@@ -321,12 +376,13 @@ class DataManager {
                     let devices = Table("devices")
                     let dquery = devices.filter(.uuid == uuid)
                     
-                    if let device = try db.pluck(dquery), device[.baseHours] != baseHours {
+                    if let device = try! db.pluck(dquery) {
+                        if device[.baseHours] != baseHours {
                         let updateQuery = dquery.update(.baseHours <- baseHours)
                         if (try? db.run(updateQuery)) != nil {
                             changes = true
                         }
-                    }
+                    }}
                     
                     // update all sessions that exist / delete all that shouldn't exist
                     let sessionsTable = Table("sessions")
@@ -366,8 +422,6 @@ class DataManager {
                         }
                     }
                     
-                    // write all sessions that don't exist
-                    
                     completion(changes)
                 } catch {
                     print("try error: \(error)")
@@ -377,6 +431,7 @@ class DataManager {
             .progress { progressData in
                 print(progressData)
         }
+        
     }
  }
 
@@ -384,6 +439,8 @@ extension Expression {
     static var id: Expression<Int> { return Expression<Int>("id") }
     static var uuid: Expression<String> { return Expression<String>("uuid") }
     static var baseHours: Expression<Double> { return Expression<Double>("baseHours") }
+    static var activeSessionSince: Expression<Date?> { return Expression<Date?>("activeSessionSince")}
+    static var activeSessionDirection: Expression<Int?> { return Expression<Int?>("activeSessionDirection")}
     
     static var device_uuid: Expression<String> { return Expression<String>("device_uuid") }
     static var startTime: Expression<Date> { return Expression<Date>("startTime") }
@@ -417,4 +474,13 @@ struct Session {
 
 extension NSNotification.Name {
     static let baseTimeUpdated = NSNotification.Name(rawValue: "baseTimeUpdated")
+    static let startUpdatingDisplay = NSNotification.Name(rawValue: "startUpdatingDisplay")
 }
+
+extension Connection {
+    public var userVersion: Int32 {
+        get { return Int32(try! scalar("PRAGMA user_version") as! Int64)}
+        set { try! run("PRAGMA user_version = \(newValue)") }
+    }
+}
+

@@ -18,6 +18,16 @@ class TimingController {
     
     init() {
         self.baseTime = DataManager.manager.getTotalTime() ?? 0
+        
+        DispatchQueue.main.async {
+            DataManager.manager.tryContinueDBSession {
+                if let (startTime, direction) = $0 {
+                    self.startTime = startTime
+                    self.direction = Double(direction)
+                    NotificationCenter.default.post(name: .startUpdatingDisplay, object: nil, userInfo: nil)
+                }
+            }
+        }
     }
     
     var isRunning: Bool {
@@ -28,16 +38,20 @@ class TimingController {
         if self.isRunning {
             self.pause()
         }
-        self.startTime = Date()
-        self.direction = 1
+        self.startSession(startTime: Date(), direction: 1)
     }
     
     func startBackward() {
         if self.isRunning {
             self.pause()
         }
-        self.startTime = Date()
-        self.direction = -1
+        self.startSession(startTime: Date(), direction: -1)
+    }
+    
+    func startSession(startTime: Date, direction: Int) {
+        self.startTime = startTime
+        self.direction = Double(direction)
+        DataManager.manager.startActiveSession(startTime: startTime, direction: direction)
     }
     
     func pause() {
@@ -46,9 +60,18 @@ class TimingController {
         }
         
         DataManager.manager.logSession(startTime: self.startTime, hours: self.currentSessionSeconds/3600)
+        DataManager.manager.stopActiveSession()
         
         self.baseTime = self.currentTime
         self.direction = 0
+    }
+    
+    func discardSession() {
+        guard self.isRunning else {
+            return
+        }
+        self.direction = 0
+        DataManager.manager.stopActiveSession()
     }
     
     var currentSessionSeconds: Double {

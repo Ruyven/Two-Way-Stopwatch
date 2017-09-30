@@ -5,6 +5,7 @@
     </device>
     <dependencies>
         <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="13173"/>
+        <capability name="Aspect ratio constraints" minToolsVersion="5.1"/>
         <capability name="Safe area layout guides" minToolsVersion="9.0"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
@@ -18,34 +19,56 @@
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="0:00:00.0" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" minimumScaleFactor="0.5" adjustsFontForContentSizeCategory="YES" translatesAutoresizingMaskIntoConstraints="NO" id="RV2-jx-gJf">
-                                <rect key="frame" x="16" y="120" width="343" height="104"/>
+                                <rect key="frame" x="16" y="70" width="343" height="104"/>
                                 <fontDescription key="fontDescription" type="system" pointSize="87"/>
                                 <color key="textColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                                 <nil key="highlightedColor"/>
                             </label>
                             <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="OM1-mg-LGC">
-                                <rect key="frame" x="78" y="291" width="67" height="30"/>
-                                <state key="normal" title="backward"/>
+                                <rect key="frame" x="69.5" y="241" width="80" height="80"/>
+                                <color key="backgroundColor" red="0.0" green="0.47843137250000001" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" constant="80" id="FFP-MX-pIa"/>
+                                    <constraint firstAttribute="width" secondItem="OM1-mg-LGC" secondAttribute="height" id="cf7-tM-qqq"/>
+                                </constraints>
+                                <state key="normal" title="backward">
+                                    <color key="titleColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                                </state>
                                 <connections>
                                     <action selector="startBackward:" destination="BYZ-38-t0r" eventType="touchUpInside" id="9cy-hK-Cwg"/>
                                 </connections>
                             </button>
                             <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="FgV-CD-3JG">
-                                <rect key="frame" x="230" y="291" width="67" height="30"/>
-                                <state key="normal" title="forward"/>
+                                <rect key="frame" x="225.5" y="241" width="80" height="80"/>
+                                <color key="backgroundColor" red="0.0" green="1" blue="0.28291556680000002" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" secondItem="FgV-CD-3JG" secondAttribute="height" multiplier="1:1" id="UCu-QL-d3a"/>
+                                </constraints>
+                                <state key="normal" title="forward">
+                                    <color key="titleColor" red="0.0" green="0.0" blue="0.0" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                </state>
                                 <connections>
                                     <action selector="startForward:" destination="BYZ-38-t0r" eventType="touchUpInside" id="eP8-e6-gmK"/>
                                 </connections>
                             </button>
                             <view contentMode="scaleToFill" horizontalHuggingPriority="200" horizontalCompressionResistancePriority="700" translatesAutoresizingMaskIntoConstraints="NO" id="wph-Qs-MrK">
-                                <rect key="frame" x="0.0" y="291" width="70" height="30"/>
+                                <rect key="frame" x="0.0" y="241" width="61.5" height="80"/>
                             </view>
                             <view contentMode="scaleToFill" horizontalHuggingPriority="200" horizontalCompressionResistancePriority="700" translatesAutoresizingMaskIntoConstraints="NO" id="J31-Ex-ZdN">
-                                <rect key="frame" x="305" y="291" width="70" height="30"/>
+                                <rect key="frame" x="313.5" y="241" width="61.5" height="80"/>
                             </view>
                             <view contentMode="scaleToFill" horizontalHuggingPriority="200" horizontalCompressionResistancePriority="700" translatesAutoresizingMaskIntoConstraints="NO" id="Lfh-E0-dp9">
-                                <rect key="frame" x="152.5" y="291" width="69.5" height="30"/>
+                                <rect key="frame" x="157" y="241" width="60.5" height="80"/>
                             </view>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="eyb-Rd-3jW">
+                                <rect key="frame" x="133" y="421" width="108" height="30"/>
+                                <state key="normal" title="Discard session">
+                                    <color key="titleColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                                </state>
+                                <connections>
+                                    <action selector="discardSession:" destination="BYZ-38-t0r" eventType="touchUpInside" id="ef9-PF-4YC"/>
+                                </connections>
+                            </button>
                         </subviews>
                         <color key="backgroundColor" red="0.0" green="0.0" blue="0.0" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                         <constraints>
@@ -55,18 +78,21 @@
                             <constraint firstItem="Lfh-E0-dp9" firstAttribute="bottom" secondItem="wph-Qs-MrK" secondAttribute="bottom" id="G42-OJ-IHd"/>
                             <constraint firstItem="J31-Ex-ZdN" firstAttribute="bottom" secondItem="wph-Qs-MrK" secondAttribute="bottom" id="PmO-Rc-RBK"/>
                             <constraint firstItem="J31-Ex-ZdN" firstAttribute="width" secondItem="wph-Qs-MrK" secondAttribute="width" id="SmO-0O-9pZ"/>
+                            <constraint firstItem="eyb-Rd-3jW" firstAttribute="centerX" secondItem="6Tk-OE-BBY" secondAttribute="centerX" id="T69-G6-sJI"/>
                             <constraint firstItem="Lfh-E0-dp9" firstAttribute="top" secondItem="wph-Qs-MrK" secondAttribute="top" id="TJw-80-IAO"/>
+                            <constraint firstItem="6Tk-OE-BBY" firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="eyb-Rd-3jW" secondAttribute="trailing" constant="16" id="WAP-ud-NAS"/>
                             <constraint firstItem="Lfh-E0-dp9" firstAttribute="leading" secondItem="OM1-mg-LGC" secondAttribute="trailing" constant="8" id="WeG-LI-yF3"/>
                             <constraint firstItem="OM1-mg-LGC" firstAttribute="height" secondItem="FgV-CD-3JG" secondAttribute="height" id="ZZ7-A7-1TU"/>
                             <constraint firstItem="J31-Ex-ZdN" firstAttribute="top" secondItem="wph-Qs-MrK" secondAttribute="top" id="a8T-eW-JlF"/>
                             <constraint firstItem="FgV-CD-3JG" firstAttribute="baseline" secondItem="OM1-mg-LGC" secondAttribute="baseline" id="aDm-vp-skl"/>
                             <constraint firstItem="J31-Ex-ZdN" firstAttribute="leading" secondItem="FgV-CD-3JG" secondAttribute="trailing" constant="8" id="gkg-p4-iC3"/>
                             <constraint firstItem="wph-Qs-MrK" firstAttribute="bottom" secondItem="OM1-mg-LGC" secondAttribute="bottom" id="iQb-s3-ksz"/>
+                            <constraint firstItem="eyb-Rd-3jW" firstAttribute="top" secondItem="OM1-mg-LGC" secondAttribute="bottom" constant="100" id="ibb-ga-zcK"/>
                             <constraint firstItem="wph-Qs-MrK" firstAttribute="leading" secondItem="6Tk-OE-BBY" secondAttribute="leading" id="ipQ-JL-OXD"/>
                             <constraint firstItem="OM1-mg-LGC" firstAttribute="width" secondItem="FgV-CD-3JG" secondAttribute="width" id="mIX-TE-38O"/>
                             <constraint firstItem="OM1-mg-LGC" firstAttribute="leading" secondItem="wph-Qs-MrK" secondAttribute="trailing" constant="8" id="qkM-bV-Pug"/>
                             <constraint firstItem="wph-Qs-MrK" firstAttribute="top" secondItem="OM1-mg-LGC" secondAttribute="top" id="tNf-5x-7ce"/>
-                            <constraint firstItem="RV2-jx-gJf" firstAttribute="top" secondItem="6Tk-OE-BBY" secondAttribute="top" constant="100" id="ufv-NB-4Ws"/>
+                            <constraint firstItem="RV2-jx-gJf" firstAttribute="top" secondItem="6Tk-OE-BBY" secondAttribute="top" constant="50" id="ufv-NB-4Ws"/>
                             <constraint firstItem="Lfh-E0-dp9" firstAttribute="width" secondItem="wph-Qs-MrK" secondAttribute="width" id="whC-9P-0zP"/>
                             <constraint firstItem="RV2-jx-gJf" firstAttribute="leading" secondItem="6Tk-OE-BBY" secondAttribute="leading" constant="16" id="yVk-fg-oNL"/>
                             <constraint firstItem="J31-Ex-ZdN" firstAttribute="trailing" secondItem="6Tk-OE-BBY" secondAttribute="trailing" id="z7S-Rm-Dr2"/>
@@ -75,6 +101,7 @@
                     </view>
                     <connections>
                         <outlet property="backwardButton" destination="OM1-mg-LGC" id="EUj-f3-rr9"/>
+                        <outlet property="discardButton" destination="eyb-Rd-3jW" id="717-3l-0kZ"/>
                         <outlet property="forwardButton" destination="FgV-CD-3JG" id="qFu-oj-1sY"/>
                         <outlet property="valueLabel" destination="RV2-jx-gJf" id="IOc-Xt-cIB"/>
                     </connections>
