@@ -6,8 +6,7 @@
 //  Copyright © 2017 me. All rights reserved.
 //
 
-import Cocoa
-import IOKit
+//import IOKit
 
 import SQLite
 import SwiftyDropbox
@@ -16,7 +15,7 @@ class DataManager {
     static var manager = DataManager()
     
     struct Constants {
-        static let dbFilename = "db.sqlite3"
+        static let dbFilename = "twstopwatch.sqlite3"
     }
     
     private var dbConnection: Connection?
@@ -63,24 +62,7 @@ class DataManager {
     var uuid: String
     
     init() {
-        /*if let db = self.openDBConnection() {
-            
-        }*/
-        
-        // get this device's serial number
-        // Get the platform expert
-        let platformExpert: io_service_t = IOServiceGetMatchingService(kIOMasterPortDefault, IOServiceMatching("IOPlatformExpertDevice"));
-        
-        // Get the serial number as a CFString ( actually as Unmanaged<AnyObject>! )
-        let serialNumberAsCFString = IORegistryEntryCreateCFProperty(platformExpert, kIOPlatformSerialNumberKey as CFString, kCFAllocatorDefault, 0);
-        
-        // Release the platform expert (we're responsible)
-        IOObjectRelease(platformExpert);
-        
-        // Take the unretained value of the unmanaged-any-object
-        // (so we're not responsible for releasing it)
-        // and pass it back as a String or, if it fails, an empty string
-        self.uuid = serialNumberAsCFString!.takeUnretainedValue() as! String
+        self.uuid = UUIDManager.generateUUID()
         
         //FIXME: I can use ListFolderLongpoll to monitor it for changes. However, I will need to store the current cursor.
         self.dropboxSyncDownload()

@@ -19,7 +19,6 @@ class ViewController: NSViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        // Do any additional setup after loading the view.
         self.updateDisplay()
         
         NotificationCenter.default.addObserver(self, selector: #selector(updateDisplay), name: .baseTimeUpdated, object: nil)
@@ -51,27 +50,7 @@ class ViewController: NSViewController {
     
     @objc func updateDisplay() {
         //FIXME: This should all happen in TimingController. All I need is to get the string.
-        var time = timingController.currentTime
-        
-        let vorzeichen: String
-        if time >= 0 {
-            vorzeichen = ""
-        } else {
-            vorzeichen = "-"
-            time = 0 - time
-        }
-        
-        let hours = Int(time)
-        time = time - Double(hours)
-        time *= 60
-        let minutes = Int(time)
-        time = time - Double(minutes)
-        time *= 60
-        let seconds = Int(time)
-        time -= Double(seconds)
-        let tenths = Int(time*10)
-        
-        self.valueLabel.stringValue = String(format: "\(vorzeichen)%d:%02d:%02d.%d", hours, minutes, seconds, tenths)
+        self.valueLabel.stringValue = timingController.displayTime
     }
     
 }
