@@ -68,10 +68,10 @@ class DataManager {
         self.dropboxSyncDownload()
     }
     
-    private func createDeviceInDatabaseIfNeeded(db: Connection) throws {
+    private func createDeviceInDatabaseIfNeeded(db: Connection, uuid: String) throws {
         // check if the device exists
         let devices = Table("devices")
-        let query = devices.filter(.uuid == self.uuid).count
+        let query = devices.filter(.uuid == uuid).count
         let count = try db.scalar(query)
         
         if count > 0 {
@@ -80,12 +80,12 @@ class DataManager {
         }
         
         // else... create device
-        try db.run(devices.insert(.uuid <- self.uuid, .baseHours <- 0))
+        try db.run(devices.insert(.uuid <- uuid, .baseHours <- 0))
     }
     
     func getTotalTime() -> Double? {
         guard let db = self.openDBConnection(),
-            let _ = try? self.createDeviceInDatabaseIfNeeded(db: db) else {
+            let _ = try? self.createDeviceInDatabaseIfNeeded(db: db, uuid: self.uuid) else {
                 return nil
         }
         
@@ -272,7 +272,7 @@ class DataManager {
     }
     
     private func dropboxSyncDownload(file: Files.Metadata, completion: @escaping ((_ changes: Bool) -> Void)) {
-        guard file.name != self.myFilenameInDropbox, let filePath = file.pathDisplay else {
+        guard file.name != self.myFilenameInDropbox, let filePath = file.pathDisplay, let db = self.dbConnection else {
             completion(false)
             return
         }
@@ -281,20 +281,30 @@ class DataManager {
         
         self.dropboxClient.files.download(path: filePath)
             .response { response, error in
-                if let response = response {
+                guard let response = response else {
+                    if let error = error {
+                        print(error)
+                    }
+                    completion(false)
+                    return
+                }
+                
+                var changes = false
+                
+                do {
                     let responseMetadata = response.0
                     print(responseMetadata)
                     let fileContents = response.1
                     print(fileContents)
                     
                     // decode the json
-                    guard let json = try? JSONSerialization.jsonObject(with: fileContents, options: []) as? [String: Any],
-                        let uuid = json?[jk.uuid] as? String,
-                        let baseHours = json?[jk.baseHours] as? Double,
-                        let sessionsDictArray = json?[jk.sessions] as? [[String: Double]] else {
+                    guard let json = try JSONSerialization.jsonObject(with: fileContents, options: []) as? [String: Any],
+                        let uuid = json[jk.uuid] as? String,
+                        let baseHours = json[jk.baseHours] as? Double,
+                        let sessionsDictArray = json[jk.sessions] as? [[String: Double]] else {
                             return
                     }
-                    let sessions = sessionsDictArray.flatMap({ dict -> Session? in
+                    var remoteSessions = sessionsDictArray.flatMap({ dict -> Session? in
                         guard let startTimeStamp = dict[jk.startTime], let hours = dict[jk.hours] else {
                             return nil
                         }
@@ -302,11 +312,66 @@ class DataManager {
                     })
                     
                     //FIXME: now sync to database for the device in question. If any data has to be replaced, call completion(true) instead.
+                    guard uuid != self.uuid else {
+                        completion(false)
+                        return
+                    }
+                    try self.createDeviceInDatabaseIfNeeded(db: db, uuid: uuid)
                     
-                    completion(false)
+                    let devices = Table("devices")
+                    let dquery = devices.filter(.uuid == uuid)
                     
-                } else if let error = error {
-                    print(error)
+                    if let device = try db.pluck(dquery), device[.baseHours] != baseHours {
+                        let updateQuery = dquery.update(.baseHours <- baseHours)
+                        if (try? db.run(updateQuery)) != nil {
+                            changes = true
+                        }
+                    }
+                    
+                    // update all sessions that exist / delete all that shouldn't exist
+                    let sessionsTable = Table("sessions")
+                    let deviceSessions = sessionsTable.where(.device_uuid == uuid)
+                    for localSession in try db.prepare(deviceSessions) {
+                        if let remoteIndex = remoteSessions.index(where: {$0.startTime == localSession[.startTime]}) {
+                            let remoteSession = remoteSessions[remoteIndex]
+                            if localSession[.hours] != remoteSession.hours {
+                                // update in database
+                                let updateQuery = sessionsTable
+                                    .filter(.id == localSession[.id])
+                                    .update(.hours <- remoteSession.hours)
+                                if (try? db.run(updateQuery)) != nil {
+                                    changes = true
+                                }
+                            }
+                            remoteSessions.remove(at: remoteIndex) // this one is done
+                        } else {
+                            let deleteQuery = deviceSessions
+                                .filter(.id == localSession[.id])
+                                .delete()
+                            if (try? db.run(deleteQuery)) != nil {
+                                changes = true
+                            }
+                        }
+                    }
+                    
+                    // if any remote sessions are left over, they have to be written to the local database
+                    for remoteSession in remoteSessions {
+                        let insertQuery = sessionsTable.insert(
+                            .device_uuid <- uuid,
+                            .startTime <- remoteSession.startTime,
+                            .hours <- remoteSession.hours
+                        )
+                        if (try? db.run(insertQuery)) != nil {
+                            changes = true
+                        }
+                    }
+                    
+                    // write all sessions that don't exist
+                    
+                    completion(changes)
+                } catch {
+                    print("try error: \(error)")
+                    completion(changes)
                 }
             }
             .progress { progressData in
@@ -316,6 +381,7 @@ class DataManager {
  }
 
 extension Expression {
+    static var id: Expression<Int> { return Expression<Int>("id") }
     static var uuid: Expression<String> { return Expression<String>("uuid") }
     static var baseHours: Expression<Double> { return Expression<Double>("baseHours") }
     
