@@ -81,6 +81,9 @@ class DataManager {
         // (so we're not responsible for releasing it)
         // and pass it back as a String or, if it fails, an empty string
         self.uuid = serialNumberAsCFString!.takeUnretainedValue() as! String
+        
+        //FIXME: I can use ListFolderLongpoll to monitor it for changes. However, I will need to store the current cursor.
+        self.dropboxSyncDownload()
     }
     
     private func createDeviceInDatabaseIfNeeded(db: Connection) throws {
@@ -166,12 +169,20 @@ class DataManager {
             print("logSession: \(error)")
         }
         
-        self.syncWithDropbox()
+        self.dropboxSyncUpload()
     }
     
     // MARK: - Dropbox Sync
     
-    func syncWithDropbox() {
+    var myFilenameInDropbox: String {
+        return "\(self.uuid).json"
+    }
+    
+    //FIXME: sync on launch (at least download)
+    
+    //TODO: sync (download) regularly?
+    
+    private var dropboxClient: DropboxClient {
         var client: DropboxClient! = DropboxClientsManager.authorizedClient
         
         if client == nil {
@@ -179,8 +190,16 @@ class DataManager {
             DropboxClientsManager.authorizedClient = client
         }
         
-        // upload: generate data for my device
-        
+        return client
+    }
+    
+    // jk = JSON Key
+    struct jk {
+        static let uuid = "uuid", baseHours = "baseHours", sessions = "sessions", startTime = "startTime", hours = "hours"
+    }
+    
+    // upload: generate data for my device
+    private func dropboxSyncUpload() {
         let uuid = self.uuid
         
         guard let db = self.openDBConnection() else {
@@ -208,13 +227,13 @@ class DataManager {
             sessions.append(Session(startTime: session[.startTime], hours: session[.hours]))
         }
         
-        let myDeviceDict = ["uuid": uuid, "baseHours": baseHours, "sessions": sessions.map({ ["startTime": $0.startTime.timeIntervalSinceReferenceDate, "hours": $0.hours] })] as [String : Any]
+        let myDeviceDict = [jk.uuid: uuid, jk.baseHours: baseHours, jk.sessions: sessions.map({ [jk.startTime: $0.startTime.timeIntervalSinceReferenceDate, jk.hours: $0.hours] })] as [String : Any]
         
-        guard let jsonData = try? JSONSerialization.data(withJSONObject: myDeviceDict, options: JSONSerialization.WritingOptions()) else {
+        guard let jsonData = try? JSONSerialization.data(withJSONObject: myDeviceDict, options: []) else {
             return      // well that didn't work
         }
         
-        client.files.upload(path: "/\(uuid).json", mode: .overwrite, input: jsonData)
+        self.dropboxClient.files.upload(path: "/\(myFilenameInDropbox)", mode: .overwrite, input: jsonData)
             .response { response, error in
                 if let response = response {
                     print(response)
@@ -226,7 +245,93 @@ class DataManager {
                 print(progressData)
         }
     }
-}
+    
+    private func dropboxSyncDownload() {
+        // now download jsonData from all other devices
+        var dataUpdated = false
+        
+        // first: get a list of all devices we have in Dropbox
+        
+        self.dropboxClient.files.listFolder(path: "").response { response, error in
+            guard let result = response else {
+                print(error)
+                return
+            }
+            
+            let files = result.entries
+            
+            self.dropboxSyncDownloadAll(files: files) { dataUpdated in
+                if dataUpdated, let baseTime = self.getTotalTime() {
+                    TimingController.controller.baseTime = baseTime
+                    NotificationCenter.default.post(name: .baseTimeUpdated, object: nil, userInfo: nil)
+                }
+            }
+            
+            // files[].name is the file name
+            // check files[].client_modified and files[].server_modified to test if it needs to be updated in the database
+            
+            //FIXME: use result.cursor and result.hasMore to keep polling, if necessary
+        }
+    }
+    
+    private func dropboxSyncDownloadAll(files: [Files.Metadata], completion: @escaping ((_ changes: Bool) -> Void)) {
+        if files.count > 0 {
+            var remainingFiles = files
+            let file = remainingFiles.removeFirst()
+            
+            self.dropboxSyncDownload(file: file, completion: { (changes) in
+                self.dropboxSyncDownloadAll(files: remainingFiles, completion: { (otherChanges) in
+                    completion(changes || otherChanges)
+                })
+            })
+        } else {
+            completion(false) // this file had no changes because it is no file
+        }
+    }
+    
+    private func dropboxSyncDownload(file: Files.Metadata, completion: @escaping ((_ changes: Bool) -> Void)) {
+        guard file.name != self.myFilenameInDropbox, let filePath = file.pathDisplay else {
+            completion(false)
+            return
+        }
+        
+        //FIXME: check files[].client_modified and files[].server_modified to test if it needs to be updated in the database, otherwise just call completion(false)
+        
+        self.dropboxClient.files.download(path: filePath)
+            .response { response, error in
+                if let response = response {
+                    let responseMetadata = response.0
+                    print(responseMetadata)
+                    let fileContents = response.1
+                    print(fileContents)
+                    
+                    // decode the json
+                    guard let json = try? JSONSerialization.jsonObject(with: fileContents, options: []) as? [String: Any],
+                        let uuid = json?[jk.uuid] as? String,
+                        let baseHours = json?[jk.baseHours] as? Double,
+                        let sessionsDictArray = json?[jk.sessions] as? [[String: Double]] else {
+                            return
+                    }
+                    let sessions = sessionsDictArray.flatMap({ dict -> Session? in
+                        guard let startTimeStamp = dict[jk.startTime], let hours = dict[jk.hours] else {
+                            return nil
+                        }
+                        return Session(startTime: Date(timeIntervalSinceReferenceDate: startTimeStamp), hours: hours)
+                    })
+                    
+                    //FIXME: now sync to database for the device in question. If any data has to be replaced, call completion(true) instead.
+                    
+                    completion(false)
+                    
+                } else if let error = error {
+                    print(error)
+                }
+            }
+            .progress { progressData in
+                print(progressData)
+        }
+    }
+ }
 
 extension Expression {
     static var uuid: Expression<String> { return Expression<String>("uuid") }
@@ -259,4 +364,9 @@ struct Session {
         }
     }
     
+}
+
+
+extension NSNotification.Name {
+    static let baseTimeUpdated = NSNotification.Name(rawValue: "baseTimeUpdated")
 }

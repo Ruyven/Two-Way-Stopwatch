@@ -61,13 +61,13 @@
 		FA8A146A1F77DDBD00C11EEE /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		FA8A146D1F77DDBD00C11EEE /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		FA8A146F1F77DDBD00C11EEE /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		FA8A14701F77DDBD00C11EEE /* Stopwatch.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Stopwatch.entitlements; sourceTree = "<group>"; };
 		FAC353BA1F7A9AD400F8703B /* db.sqlite3 */ = {isa = PBXFileReference; lastKnownFileType = file; path = db.sqlite3; sourceTree = "<group>"; };
 		FAC353BB1F7A9B0D00F8703B /* DataManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataManager.swift; sourceTree = "<group>"; };
 		FAEB4B421F7E97C4002FCD4A /* SQLite.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SQLite.framework; path = Carthage/Build/Mac/SQLite.framework; sourceTree = "<group>"; };
 		FAEB4B431F7E97C4002FCD4A /* Alamofire.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Alamofire.framework; path = Carthage/Build/Mac/Alamofire.framework; sourceTree = "<group>"; };
 		FAEB4B441F7E97C4002FCD4A /* JASON.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JASON.framework; path = Carthage/Build/Mac/JASON.framework; sourceTree = "<group>"; };
 		FAEB4B451F7E97C4002FCD4A /* SwiftyDropbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftyDropbox.framework; path = Carthage/Build/Mac/SwiftyDropbox.framework; sourceTree = "<group>"; };
+		FAEB4B4E1F7F1D93002FCD4A /* TwoWayStopwatch Mac.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "TwoWayStopwatch Mac.entitlements"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -112,7 +112,6 @@
 				FA8A14651F77DDBD00C11EEE /* ViewController.swift */,
 				FA8A146C1F77DDBD00C11EEE /* Main.storyboard */,
 				FA8A146F1F77DDBD00C11EEE /* Info.plist */,
-				FA8A14701F77DDBD00C11EEE /* Stopwatch.entitlements */,
 			);
 			path = "StopWatch-macOS";
 			sourceTree = "<group>";
@@ -131,6 +130,7 @@
 		FA8A14571F77DDBD00C11EEE = {
 			isa = PBXGroup;
 			children = (
+				FAEB4B4E1F7F1D93002FCD4A /* TwoWayStopwatch Mac.entitlements */,
 				FA8A14621F77DDBD00C11EEE /* Stopwatch */,
 				FA047A841F7D46A500822F35 /* StopWatch-macOS */,
 				FA047A731F7D461F00822F35 /* Stopwatch-iOS */,
@@ -214,6 +214,11 @@
 					FA8A145F1F77DDBD00C11EEE = {
 						CreatedOnToolsVersion = 9.0;
 						ProvisioningStyle = Automatic;
+						SystemCapabilities = {
+							com.apple.Sandbox = {
+								enabled = 1;
+							};
+						};
 					};
 				};
 			};
@@ -457,6 +462,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = "TwoWayStopwatch Mac.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				DEVELOPMENT_TEAM = XXK487QHW5;
@@ -476,6 +482,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = "TwoWayStopwatch Mac.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				DEVELOPMENT_TEAM = XXK487QHW5;

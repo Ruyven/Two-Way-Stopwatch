@@ -21,6 +21,8 @@ class ViewController: NSViewController {
 
         // Do any additional setup after loading the view.
         self.updateDisplay()
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(updateDisplay), name: .baseTimeUpdated, object: nil)
     }
 
     override var representedObject: Any? {
@@ -29,7 +31,7 @@ class ViewController: NSViewController {
         }
     }
     
-    let timingController = TimingController()
+    var timingController: TimingController { return TimingController.controller }
     
     var displayTimer: Timer?
     

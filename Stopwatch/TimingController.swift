@@ -9,6 +9,8 @@
 import Cocoa
 
 class TimingController {
+    static var controller = TimingController()
+    
     var baseTime: Double   // time in hours
     
     var startTime: Date = Date()
