@@ -42,11 +42,11 @@ class ViewController: NSViewController {
     
     @IBAction func startForward(_ sender: Any) {
         timingController.startForward()
-        self.displayTimer = Timer.scheduledTimer(timeInterval: 0.05, target: self, selector: #selector(updateDisplay), userInfo: nil, repeats: true)
+        self.startDisplayTimer()
     }
     @IBAction func startBackward(_ sender: Any) {
         timingController.startBackward()
-        self.displayTimer = Timer.scheduledTimer(timeInterval: 0.05, target: self, selector: #selector(updateDisplay), userInfo: nil, repeats: true)
+        self.startDisplayTimer()
     }
     
     @IBAction func pause(_ sender: Any? = nil) {
@@ -55,7 +55,6 @@ class ViewController: NSViewController {
     }
     
     @objc func updateDisplay() {
-        //FIXME: This should all happen in TimingController. All I need is to get the string.
         self.valueLabel.stringValue = timingController.displayTime
     }
     

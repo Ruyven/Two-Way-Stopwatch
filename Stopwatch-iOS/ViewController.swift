@@ -109,6 +109,19 @@ class ViewController: UIViewController {
             let button = (timingController.direction > 0 ? forwardButton : backwardButton)
             button?.setTitle("pause", for: .normal)
         }
+        
+        let activeColor = UIColor.white
+        let activeBorderWidth: CGFloat = 2
+        if timingController.direction > 0 {
+            self.forwardButton.setBorder(color: activeColor, width: activeBorderWidth)
+        } else {
+            self.forwardButton.setBorder(color: nil, width: 0)
+        }
+        if timingController.direction < 0 {
+            self.backwardButton.setBorder(color: activeColor, width: activeBorderWidth)
+        } else {
+            self.backwardButton.setBorder(color: nil, width: 0)
+        }
     }
 
     @IBAction func discardSession(_ sender: UIButton) {
@@ -119,3 +132,9 @@ class ViewController: UIViewController {
     
 }
 
+extension UIView {
+    func setBorder(color: UIColor?, width: CGFloat) {
+        self.layer.borderColor = color?.cgColor
+        self.layer.borderWidth = width
+    }
+}

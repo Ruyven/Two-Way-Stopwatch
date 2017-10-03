@@ -8,13 +8,43 @@
 
 import Foundation
 
+#if os(OSX)
+    import Cocoa
+#elseif os(iOS)
+    import UIKit
+#endif
+
 class TimingController {
     static var controller = TimingController()
     
     var baseTime: Double   // time in hours
     
     var startTime: Date = Date()
-    var direction: Double = 0
+    var direction: Double = 0 {
+        didSet {
+            #if os(OSX)
+                NSApplication.shared.dockTile.badgeLabel = {
+                    if direction > 0 {
+                        return "▶"
+                    } else if direction < 0 {
+                        return "◀"
+                    } else {
+                        return nil
+                    }
+                }()
+            #elseif os(iOS)
+                UIApplication.shared.applicationIconBadgeNumber = {
+                    if direction > 0 {
+                        return 1
+                    } else if direction < 0 {
+                        return 10
+                    } else {
+                        return 0
+                    }
+                }()
+            #endif
+        }
+    }
     
     init() {
         self.baseTime = DataManager.manager.getTotalTime() ?? 0
