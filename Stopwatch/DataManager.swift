@@ -16,6 +16,7 @@ class DataManager {
     
     struct Constants {
         static let dbFilename = "twstopwatch.sqlite3"
+        static let dbxSyncInterval: Double = 300
     }
     
     private var dbConnection: Connection?
@@ -71,12 +72,19 @@ class DataManager {
                 try db.run(Table("devices").addColumn(.activeSessionDirection))
                 db.userVersion = 1
             }
+            if db.userVersion < 2 {
+                // migrate to v2: add column dbxSyncCursor
+                try db.run(Table("devices").addColumn(.dbxSyncCursor))
+                db.userVersion = 2
+            }
         } catch {
             print("Migration failed :(")
         }
     }
     
     var uuid: String
+    
+    private var dropboxSyncTimer: Timer?
     
     init() {
         self.uuid = UUIDManager.generateUUID()
@@ -213,6 +221,18 @@ class DataManager {
     
     // MARK: - Dropbox Sync
     
+    private var dropboxSyncCursor: String? {
+        didSet {
+            guard dropboxSyncCursor != oldValue, let db = self.openDBConnection() else {
+                return
+            }
+            do {
+                let updateQuery = self.thisDeviceQuery.update(.dbxSyncCursor <- dropboxSyncCursor)
+                try db.run(updateQuery)
+            } catch {}
+        }
+    }
+    
     var myFilenameInDropbox: String {
         return "\(self.uuid).json"
     }
@@ -285,11 +305,32 @@ class DataManager {
         }
     }
     
+    private func dropboxListFolder(_ completion: @escaping ((Files.ListFolderResult?, Error?) -> Void)) {
+        if let cursor = self.dropboxSyncCursor {
+            self.dropboxClient.files.listFolderContinue(cursor: cursor).response { response, error in
+                completion(response, error as? Error)
+            }
+        } else {
+            self.dropboxClient.files.listFolder(path: "").response { response, error in
+                completion(response, error as? Error)
+            }
+        }
+    }
     private func dropboxSyncDownload() {
         // now download jsonData from all other devices
         
-        // first: get a list of all devices we have in Dropbox
-        self.dropboxClient.files.listFolder(path: "").response { response, error in
+        // check if we have a dropbox sync cursor from last time
+        if self.dropboxSyncCursor == nil, let db = self.openDBConnection(), let row = try? db.pluck(self.thisDeviceQuery), let cursor = row?[.dbxSyncCursor] {
+            self.dropboxSyncCursor = cursor
+        }
+        
+        // get a list of all devices we have in Dropbox
+        self.dropboxListFolder { response, error in
+            // repeat this regularly
+            self.dropboxSyncTimer = Timer.scheduledTimer(withTimeInterval: Constants.dbxSyncInterval, repeats: false, block: { (_) in
+                self.dropboxSyncDownload()
+            })
+            
             guard let result = response else {
                 print(error as Any)
                 return
@@ -307,7 +348,7 @@ class DataManager {
             // files[].name is the file name
             // check files[].client_modified and files[].server_modified to test if it needs to be updated in the database
             
-            //FIXME: use result.cursor and result.hasMore to keep polling, if necessary
+            //FIXME: use result.hasMore to keep polling, if necessary
         }
     }
     
@@ -441,6 +482,7 @@ extension Expression {
     static var baseHours: Expression<Double> { return Expression<Double>("baseHours") }
     static var activeSessionSince: Expression<Date?> { return Expression<Date?>("activeSessionSince")}
     static var activeSessionDirection: Expression<Int?> { return Expression<Int?>("activeSessionDirection")}
+    static var dbxSyncCursor: Expression<String?> { return Expression<String?>("dbxSyncCursor") }
     
     static var device_uuid: Expression<String> { return Expression<String>("device_uuid") }
     static var startTime: Expression<Date> { return Expression<Date>("startTime") }
@@ -468,7 +510,6 @@ struct Session {
             self.hours = seconds/3600 * self.direction
         }
     }
-    
 }
 
 
