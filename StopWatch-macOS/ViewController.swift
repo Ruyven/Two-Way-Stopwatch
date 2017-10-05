@@ -52,10 +52,21 @@ class ViewController: NSViewController {
     @IBAction func pause(_ sender: Any? = nil) {
         timingController.pause()
         self.displayTimer?.invalidate()
+        self.updateDisplay()
     }
     
+    var runningSessionIsRemote = false
+    
     @objc func updateDisplay() {
-        self.valueLabel.stringValue = timingController.displayTime
+        if timingController.isRunningRemotely {
+            self.valueLabel.stringValue = timingController.remoteDisplayTime
+        } else {
+            self.valueLabel.stringValue = timingController.localDisplayTime
+        }
+        if timingController.isRunningRemotely != self.runningSessionIsRemote {
+            self.runningSessionIsRemote = timingController.isRunningRemotely
+            self.valueLabel.textColor = (runningSessionIsRemote ? .blue : .black)
+        }
     }
     
 }

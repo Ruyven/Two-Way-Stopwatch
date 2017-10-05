@@ -12,6 +12,8 @@
 		FA047A7A1F7D461F00822F35 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = FA047A781F7D461F00822F35 /* Main.storyboard */; };
 		FA047A7F1F7D461F00822F35 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = FA047A7D1F7D461F00822F35 /* LaunchScreen.storyboard */; };
 		FA0A292B1F7D433B00F04150 /* TimingController.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA0A292A1F7D433B00F04150 /* TimingController.swift */; };
+		FA3DC81A1F84D00A00B3AD1B /* UIKitUtil.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA3DC8191F84D00A00B3AD1B /* UIKitUtil.swift */; };
+		FA3DC81B1F84D00A00B3AD1B /* UIKitUtil.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA3DC8191F84D00A00B3AD1B /* UIKitUtil.swift */; };
 		FA64C3A71F7F272600E74D0B /* JASON.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FA64C3A41F7F270300E74D0B /* JASON.framework */; };
 		FA64C3A81F7F272600E74D0B /* SQLite.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FA64C3A21F7F270200E74D0B /* SQLite.framework */; };
 		FA64C3AA1F7F276B00E74D0B /* Alamofire.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FA64C3A31F7F270300E74D0B /* Alamofire.framework */; };
@@ -81,6 +83,7 @@
 		FA047A7E1F7D461F00822F35 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		FA047A801F7D461F00822F35 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		FA0A292A1F7D433B00F04150 /* TimingController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimingController.swift; sourceTree = "<group>"; };
+		FA3DC8191F84D00A00B3AD1B /* UIKitUtil.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UIKitUtil.swift; sourceTree = "<group>"; };
 		FA64C3A21F7F270200E74D0B /* SQLite.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SQLite.framework; path = Carthage/Build/Mac/SQLite.framework; sourceTree = "<group>"; };
 		FA64C3A31F7F270300E74D0B /* Alamofire.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Alamofire.framework; path = Carthage/Build/Mac/Alamofire.framework; sourceTree = "<group>"; };
 		FA64C3A41F7F270300E74D0B /* JASON.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JASON.framework; path = Carthage/Build/Mac/JASON.framework; sourceTree = "<group>"; };
@@ -205,6 +208,7 @@
 		FA8A14621F77DDBD00C11EEE /* Stopwatch */ = {
 			isa = PBXGroup;
 			children = (
+				FA3DC8191F84D00A00B3AD1B /* UIKitUtil.swift */,
 				FA64C3C41F7F29BB00E74D0B /* UUIDManager.swift */,
 				FA0A292A1F7D433B00F04150 /* TimingController.swift */,
 				FAC353BB1F7A9B0D00F8703B /* DataManager.swift */,
@@ -326,6 +330,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				FA3DC81B1F84D00A00B3AD1B /* UIKitUtil.swift in Sources */,
 				FA047A771F7D461F00822F35 /* ViewController.swift in Sources */,
 				FAEB4B501F7F25D2002FCD4A /* DataManager.swift in Sources */,
 				FAEB4B4F1F7F25CF002FCD4A /* TimingController.swift in Sources */,
@@ -338,6 +343,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				FA3DC81A1F84D00A00B3AD1B /* UIKitUtil.swift in Sources */,
 				FA8A14661F77DDBD00C11EEE /* ViewController.swift in Sources */,
 				FAC353BC1F7A9B0D00F8703B /* DataManager.swift in Sources */,
 				FA0A292B1F7D433B00F04150 /* TimingController.swift in Sources */,

@@ -16,7 +16,7 @@ class DataManager {
     
     struct Constants {
         static let dbFilename = "twstopwatch.sqlite3"
-        static let dbxSyncInterval: Double = 300
+        static let dbxSyncInterval: Double = 10
     }
     
     private var dbConnection: Connection?
@@ -89,8 +89,12 @@ class DataManager {
     init() {
         self.uuid = UUIDManager.generateUUID()
         
-        //FIXME: I can use ListFolderLongpoll to monitor it for changes. However, I will need to store the current cursor.
+        //TODO: I can use ListFolderLongpoll to monitor it for changes. However, I will need to store the current cursor.
         self.dropboxSyncDownload()
+        
+        DispatchQueue.main.async {
+            self.readRemoteSessionsFromDB()
+        }
     }
     
     private func createDeviceInDatabaseIfNeeded(db: Connection, uuid: String) throws {
@@ -173,6 +177,8 @@ class DataManager {
             
             try db.run(thisDeviceQuery.update(.activeSessionSince <- startTime))
             try db.run(thisDeviceQuery.update(.activeSessionDirection <- direction))
+            
+            self.dbxStartActiveSession(startTime: startTime, direction: direction)
         } catch {
             print(error)
         }
@@ -186,6 +192,8 @@ class DataManager {
             
             try db.run(thisDeviceQuery.update(.activeSessionSince <- nil))
             try db.run(thisDeviceQuery.update(.activeSessionDirection <- nil))
+            
+            self.dbxStopActiveSession()
         } catch {
             print(error)
         }
@@ -237,9 +245,9 @@ class DataManager {
         return "\(self.uuid).json"
     }
     
-    //FIXME: sync on launch (at least download)
-    
-    //TODO: sync (download) regularly?
+    private lazy var dbxActiveSessionFile: String = {
+        return self.dbxActiveSessionFileName(for: self.uuid)
+    }()
     
     private var dropboxClient: DropboxClient {
         var client: DropboxClient! = DropboxClientsManager.authorizedClient
@@ -254,10 +262,140 @@ class DataManager {
     
     // jk = JSON Key
     struct jk {
-        static let uuid = "uuid", baseHours = "baseHours", sessions = "sessions", startTime = "startTime", hours = "hours"
+        static let uuid = "uuid", baseHours = "baseHours", sessions = "sessions", startTime = "startTime", endTime = "endTime", hours = "hours", direction = "direction"
     }
     
-    // upload: generate data for my device
+    // MARK: active session
+    
+    private var dbxActiveSessions: [String: [String: Any]] = [:]
+    
+    private var dbxRemoteSession: (String, [String: Any])? {
+        for (device, session) in self.dbxActiveSessions {
+            if device != self.uuid, (session[jk.endTime] as? Double) == nil {
+                return (device, session)
+            }
+        }
+        // else
+        return nil
+    }
+    
+    private func dbxStartActiveSession(startTime: Date, direction: Int) {
+        var syncSessions = [String]()
+        
+        // if any session is already running: pause it
+        for (key, value) in self.dbxActiveSessions {
+            if value[jk.endTime] as? Int == nil, value[jk.uuid] as? String != self.uuid {
+                self.dbxActiveSessions[key]?[jk.endTime] = startTime.timeIntervalSinceReferenceDate
+                syncSessions.append(key)
+            }
+        }
+        
+        if syncSessions.count > 0 {
+            self.writeRemoteSessionsToDB()
+        }
+        
+        syncSessions.append(self.uuid)
+        let newSession = [jk.startTime: startTime.timeIntervalSinceReferenceDate, jk.direction: direction] as [String : Any]
+        self.dbxActiveSessions[self.uuid] = newSession
+        
+        for key in syncSessions {
+            guard let session = self.dbxActiveSessions[key], let jsonData = try? JSONSerialization.data(withJSONObject: session, options: []) else {
+                continue
+            }
+            
+            self.dropboxClient.files.upload(path: "/\(dbxActiveSessionFileName(for: key))", mode: .overwrite, input: jsonData).response { response, error in
+                print("Started remote session: \(String(describing: response)), \(String(describing: error))")
+            }
+        }
+    }
+    
+    private func dbxStopActiveSession() {
+        self.dropboxClient.files.deleteV2(path: "/\(self.dbxActiveSessionFile)").response { response, error in
+            print("Stopped remote session: \(String(describing: response)), \(String(describing: error))")
+        }
+    }
+    
+    func stopRemoteSession() {
+        if let (device, sessionToStop) = self.dbxRemoteSession {
+            var session = sessionToStop
+            session[jk.endTime] = Date().timeIntervalSinceReferenceDate
+            if let jsonData = try? JSONSerialization.data(withJSONObject: session, options: []) {
+                self.dropboxClient.files.upload(path: "/\(dbxActiveSessionFileName(for: device))", mode: .overwrite, input: jsonData).response { response, error in
+                    print("End session remotely: \(String(describing: response)), \(String(describing: error))")
+                }
+                self.dbxActiveSessions[device] = session
+            }
+            //self.remoteSessionDidStop(device: device)
+            self.writeRemoteSessionsToDB()
+        }
+    }
+    
+    /*func remoteSessionDidStop(device: String) {
+     
+    }*/
+    
+    func writeRemoteSessionsToDB() {
+        guard let db = self.openDBConnection() else {
+            return
+        }
+        
+        do {
+            let devices = Table("devices")
+            for device in try db.prepare(devices) {
+                guard device[.uuid] != self.uuid else {
+                    continue // another method already did that
+                }
+                
+                var updateDeviceWith: (Date?, Int?)?
+                if let session = self.dbxActiveSessions[device[.uuid]],
+                    (session[jk.endTime] as? Double) == nil,
+                    let startTimeStamp = session[jk.startTime] as? Double,
+                    let remoteDirection = session[jk.direction] as? Int
+                {
+                    let remoteStartTime = Date(timeIntervalSinceReferenceDate: startTimeStamp)
+                    if remoteStartTime != device[.activeSessionSince] || remoteDirection != device[.activeSessionDirection] {
+                        updateDeviceWith = (remoteStartTime, remoteDirection)
+                    }
+                } else {
+                    // there is no remote session for the device
+                    if device[.activeSessionSince] != nil || device[.activeSessionDirection] != nil {
+                        updateDeviceWith = (nil, nil)
+                    }
+                }
+                
+                if let (startTime, direction) = updateDeviceWith {
+                    let updateQuery = devices.where(.uuid == device[.uuid]).update(.activeSessionSince <- startTime, .activeSessionDirection <- direction)
+                    _ = try? db.run(updateQuery)
+                }
+            }
+        } catch {}
+    }
+    
+    func readRemoteSessionsFromDB() {
+        guard let db = self.openDBConnection() else {
+            return
+        }
+        
+        do {
+            var remoteSessionIsActive = false
+            
+            let devices = Table("devices")
+            var activeSessions: [String: [String: Any]] = [:]
+            for device in try db.prepare(devices) {
+                guard device[.uuid] != self.uuid, let startTime = device[.activeSessionSince], let direction = device[.activeSessionDirection] else {
+                    continue
+                }
+                remoteSessionIsActive = true
+                activeSessions[device[.uuid]] = [jk.startTime: startTime.timeIntervalSinceReferenceDate, jk.direction: direction]
+            }
+            self.dbxActiveSessions = activeSessions
+            if remoteSessionIsActive {
+                self.checkRunningRemoteSession()
+            }
+        } catch {}
+    }
+    
+    // MARK: upload: generate data for my device
     private func dropboxSyncUpload() {
         let uuid = self.uuid
         
@@ -293,16 +431,6 @@ class DataManager {
         }
         
         self.dropboxClient.files.upload(path: "/\(myFilenameInDropbox)", mode: .overwrite, input: jsonData)
-            .response { response, error in
-                if let response = response {
-                    print(response)
-                } else if let error = error {
-                    print(error)
-                }
-            }
-            .progress { progressData in
-                print(progressData)
-        }
     }
     
     private func dropboxListFolder(_ completion: @escaping ((Files.ListFolderResult?, Error?) -> Void)) {
@@ -316,6 +444,7 @@ class DataManager {
             }
         }
     }
+    
     private func dropboxSyncDownload() {
         // now download jsonData from all other devices
         
@@ -326,29 +455,84 @@ class DataManager {
         
         // get a list of all devices we have in Dropbox
         self.dropboxListFolder { response, error in
-            // repeat this regularly
-            self.dropboxSyncTimer = Timer.scheduledTimer(withTimeInterval: Constants.dbxSyncInterval, repeats: false, block: { (_) in
-                self.dropboxSyncDownload()
-            })
+            // repeat this regularly (start counting at the end of this refresh)
+            defer {
+                self.dropboxSyncTimer = Timer.scheduledTimer(withTimeInterval: Constants.dbxSyncInterval, repeats: false, block: { (_) in
+                    self.dropboxSyncDownload()
+                })
+            }
             
             guard let result = response else {
                 print(error as Any)
                 return
             }
             
+            self.dropboxSyncCursor = result.cursor
+            
             let files = result.entries
             
             self.dropboxSyncDownloadAll(files: files) { dataUpdated in
+                self.checkRunningRemoteSession()
+                
                 if dataUpdated, let baseTime = self.getTotalTime() {
                     TimingController.controller.baseTime = baseTime
                     NotificationCenter.default.post(name: .baseTimeUpdated, object: nil, userInfo: nil)
                 }
+
             }
             
             // files[].name is the file name
             // check files[].client_modified and files[].server_modified to test if it needs to be updated in the database
             
-            //FIXME: use result.hasMore to keep polling, if necessary
+            //TODO: use result.hasMore to keep polling, if necessary
+        }
+    }
+    
+    private func checkRunningRemoteSession() {
+        // check: if any remote session is running that got started before the current device's session, it needs to be stopped remotely.
+        var remoteSessionsChanged = false
+        for (device, session) in self.dbxActiveSessions {
+            guard device != self.uuid, (session[jk.endTime] as? Double) == nil else {
+                // doesn't concern us
+                continue
+            }
+            var remoteSessionShouldEnd = false
+            if TimingController.controller.isRunningLocally {
+                // the remote session needs to end!
+                let localStartTime = TimingController.controller.localStartTime
+                if let remoteStartTimeStamp = session[jk.startTime] as? Double, localStartTime.timeIntervalSinceReferenceDate > remoteStartTimeStamp {
+                    // if the remote session started after the local one, we're not going in here because it's not the remote one that needs to end.
+                    remoteSessionShouldEnd = true
+                    remoteSessionsChanged = true
+                    
+                    var endedSession = session
+                    endedSession[jk.endTime] = localStartTime.timeIntervalSinceReferenceDate
+                    if let jsonData = try? JSONSerialization.data(withJSONObject: endedSession, options: []) {
+                        self.dropboxClient.files.upload(path: "/\(self.dbxActiveSessionFileName(for: device))", mode: .overwrite, input: jsonData).response { response, error in
+                            print("End session remotely: \(String(describing: response)), \(String(describing: error))")
+                        }
+                        self.dbxActiveSessions[device] = endedSession
+                    }
+                }
+            }
+            
+            if !remoteSessionShouldEnd {
+                // I guess we will instead display the remote session!
+                if let remoteStartTimeStamp = session[jk.startTime] as? Double {
+                    var rdDouble = session[jk.direction] as? Double
+                    if rdDouble == nil, let rdInt = session[jk.direction] as? Int {
+                        rdDouble = Double(rdInt)
+                    }
+                    if let remoteDirection = rdDouble {
+                        TimingController.controller.remoteStartTime = Date(timeIntervalSinceReferenceDate: remoteStartTimeStamp)
+                        TimingController.controller.remoteDirection = remoteDirection
+                        NotificationCenter.default.post(name: .startUpdatingDisplay, object: nil)
+                    }
+                }
+            }
+        }
+        if remoteSessionsChanged {
+            self.writeRemoteSessionsToDB()
         }
     }
     
@@ -357,11 +541,28 @@ class DataManager {
             var remainingFiles = files
             let file = remainingFiles.removeFirst()
             
-            self.dropboxSyncDownload(file: file, completion: { (changes) in
-                self.dropboxSyncDownloadAll(files: remainingFiles, completion: { (otherChanges) in
-                    completion(changes || otherChanges)
+            //TODO: if a normal file (not _as) got deleted, delete its device entry and sessions from the local database
+            
+            if let device = self.dbxFileIsActiveSessionFile(file.name), file is Files.DeletedMetadata {
+                // it's an active session file that got deleted!
+                if self.dbxRemoteSession?.0 == device {
+                    // stop displaying the active remote session
+                    //self.remoteSessionDidStop()
+                    TimingController.controller.remoteSessionDidStop()
+                }
+                self.dbxActiveSessions[device] = nil
+                if device != self.uuid {
+                    self.writeRemoteSessionsToDB()
+                }
+                self.dropboxSyncDownloadAll(files: remainingFiles, completion: completion)
+                completion(false) // active sessions don't count as a change
+            } else {
+                self.dropboxSyncDownload(file: file, completion: { (changes) in
+                    self.dropboxSyncDownloadAll(files: remainingFiles, completion: { (otherChanges) in
+                        completion(changes || otherChanges)
+                    })
                 })
-            })
+            }
         } else {
             completion(false) // this file had no changes because it is no file
         }
@@ -372,8 +573,6 @@ class DataManager {
             completion(false)
             return
         }
-        
-        //FIXME: check files[].client_modified and files[].server_modified to test if it needs to be updated in the database, otherwise just call completion(false)
         
         self.dropboxClient.files.download(path: filePath)
             .response { response, error in
@@ -393,77 +592,107 @@ class DataManager {
                     let fileContents = response.1
                     print(fileContents)
                     
-                    // decode the json
-                    guard let json = try JSONSerialization.jsonObject(with: fileContents, options: []) as? [String: Any],
-                        let uuid = json[jk.uuid] as? String,
-                        let baseHours = json[jk.baseHours] as? Double,
-                        let sessionsDictArray = json[jk.sessions] as? [[String: Double]] else {
-                            return
-                    }
-                    var remoteSessions = sessionsDictArray.flatMap({ dict -> Session? in
-                        guard let startTimeStamp = dict[jk.startTime], let hours = dict[jk.hours] else {
-                            return nil
-                        }
-                        return Session(startTime: Date(timeIntervalSinceReferenceDate: startTimeStamp), hours: hours)
-                    })
-                    
-                    //FIXME: now sync to database for the device in question. If any data has to be replaced, call completion(true) instead.
-                    guard uuid != self.uuid else {
-                        completion(false)
+                    guard let json = try JSONSerialization.jsonObject(with: fileContents, options: []) as? [String: Any] else {
                         return
                     }
-                    try self.createDeviceInDatabaseIfNeeded(db: db, uuid: uuid)
                     
-                    let devices = Table("devices")
-                    let dquery = devices.filter(.uuid == uuid)
-                    
-                    if let device = try! db.pluck(dquery) {
-                        if device[.baseHours] != baseHours {
-                        let updateQuery = dquery.update(.baseHours <- baseHours)
-                        if (try? db.run(updateQuery)) != nil {
-                            changes = true
+                    if let deviceUUID = self.dbxFileIsActiveSessionFile(file.name) {
+                        // it's an activeSession file!
+                        if deviceUUID == self.uuid {
+                            // we're only interested in this one if Dropbox says it should be finished by now
+                            if TimingController.controller.isRunning {
+                                if let endTimeStamp = json[jk.endTime] as? Double {
+                                    if let startTimeStamp = json[jk.startTime] as? Double,
+                                        endTimeStamp > startTimeStamp, // if the endTime is before the startTime, discard the session
+                                        let direction = json[jk.direction] as? Double
+                                    {
+                                        let hours = (endTimeStamp - startTimeStamp) / 3600 * direction
+                                        self.logSession(startTime: Date(timeIntervalSinceReferenceDate: startTimeStamp), hours: hours)
+                                    }
+                                    TimingController.controller.stopSessionWithoutLogging(at: Date(timeIntervalSinceReferenceDate: endTimeStamp))
+                                }
+                            } else {
+                                // or if the local session is not running. In that case, it just needs to be deleted.
+                                self.dbxStopActiveSession()
+                            }
+                        } else {
+                            // it's a different device!
+                            self.dbxActiveSessions[deviceUUID] = json
+                            self.writeRemoteSessionsToDB()
                         }
-                    }}
-                    
-                    // update all sessions that exist / delete all that shouldn't exist
-                    let sessionsTable = Table("sessions")
-                    let deviceSessions = sessionsTable.where(.device_uuid == uuid)
-                    for localSession in try db.prepare(deviceSessions) {
-                        if let remoteIndex = remoteSessions.index(where: {$0.startTime == localSession[.startTime]}) {
-                            let remoteSession = remoteSessions[remoteIndex]
-                            if localSession[.hours] != remoteSession.hours {
-                                // update in database
-                                let updateQuery = sessionsTable
-                                    .filter(.id == localSession[.id])
-                                    .update(.hours <- remoteSession.hours)
+                        completion(false) // changes to sessions don't count as change here
+                    } else {
+                        // decode the json
+                        guard let uuid = json[jk.uuid] as? String,
+                            let baseHours = json[jk.baseHours] as? Double,
+                            let sessionsDictArray = json[jk.sessions] as? [[String: Double]] else {
+                                return
+                        }
+                        var remoteSessions = sessionsDictArray.flatMap({ dict -> Session? in
+                            guard let startTimeStamp = dict[jk.startTime], let hours = dict[jk.hours] else {
+                                return nil
+                            }
+                            return Session(startTime: Date(timeIntervalSinceReferenceDate: startTimeStamp), hours: hours)
+                        })
+                        
+                        // now sync to database for the device in question. If any data has to be replaced, call completion(true) instead.
+                        guard uuid != self.uuid else {
+                            completion(false)
+                            return
+                        }
+                        try self.createDeviceInDatabaseIfNeeded(db: db, uuid: uuid)
+                        
+                        let devices = Table("devices")
+                        let dquery = devices.filter(.uuid == uuid)
+                        
+                        if let device = try! db.pluck(dquery) {
+                            if device[.baseHours] != baseHours {
+                                let updateQuery = dquery.update(.baseHours <- baseHours)
                                 if (try? db.run(updateQuery)) != nil {
                                     changes = true
                                 }
+                            }}
+                        
+                        // update all sessions that exist / delete all that shouldn't exist
+                        let sessionsTable = Table("sessions")
+                        let deviceSessions = sessionsTable.where(.device_uuid == uuid)
+                        for localSession in try db.prepare(deviceSessions) {
+                            if let remoteIndex = remoteSessions.index(where: {$0.startTime == localSession[.startTime]}) {
+                                let remoteSession = remoteSessions[remoteIndex]
+                                if localSession[.hours] != remoteSession.hours {
+                                    // update in database
+                                    let updateQuery = sessionsTable
+                                        .filter(.id == localSession[.id])
+                                        .update(.hours <- remoteSession.hours)
+                                    if (try? db.run(updateQuery)) != nil {
+                                        changes = true
+                                    }
+                                }
+                                remoteSessions.remove(at: remoteIndex) // this one is done
+                            } else {
+                                let deleteQuery = deviceSessions
+                                    .filter(.id == localSession[.id])
+                                    .delete()
+                                if (try? db.run(deleteQuery)) != nil {
+                                    changes = true
+                                }
                             }
-                            remoteSessions.remove(at: remoteIndex) // this one is done
-                        } else {
-                            let deleteQuery = deviceSessions
-                                .filter(.id == localSession[.id])
-                                .delete()
-                            if (try? db.run(deleteQuery)) != nil {
+                        }
+                        
+                        // if any remote sessions are left over, they have to be added to the local database
+                        for remoteSession in remoteSessions {
+                            let insertQuery = sessionsTable.insert(
+                                .device_uuid <- uuid,
+                                .startTime <- remoteSession.startTime,
+                                .hours <- remoteSession.hours
+                            )
+                            if (try? db.run(insertQuery)) != nil {
                                 changes = true
                             }
                         }
+                        
+                        completion(changes)
                     }
-                    
-                    // if any remote sessions are left over, they have to be written to the local database
-                    for remoteSession in remoteSessions {
-                        let insertQuery = sessionsTable.insert(
-                            .device_uuid <- uuid,
-                            .startTime <- remoteSession.startTime,
-                            .hours <- remoteSession.hours
-                        )
-                        if (try? db.run(insertQuery)) != nil {
-                            changes = true
-                        }
-                    }
-                    
-                    completion(changes)
                 } catch {
                     print("try error: \(error)")
                     completion(changes)
@@ -473,6 +702,18 @@ class DataManager {
                 print(progressData)
         }
         
+    }
+    
+    func dbxFileIsActiveSessionFile(_ fileName: String) -> String? {
+        if let matches = (fileName.matchingStrings(regex: "^(.+?)_as\\.json$", options: .caseInsensitive).first), matches.count > 1 {
+            return matches[1]
+        } else {
+            return nil
+        }
+    }
+    
+    func dbxActiveSessionFileName(for deviceUUID: String) -> String {
+        return "\(deviceUUID)_as.json"
     }
  }
 

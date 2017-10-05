@@ -33,7 +33,7 @@ class ViewController: UIViewController {
         NotificationCenter.default.addObserver(self, selector: #selector(updateDisplay), name: .baseTimeUpdated, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(startDisplayTimer), name: .startUpdatingDisplay, object: nil)
         
-        self.updateDisplay()
+        self.updateTimerDisplay()
     }
     
     override func viewDidLayoutSubviews() {
@@ -53,7 +53,7 @@ class ViewController: UIViewController {
     
     @objc func startDisplayTimer() {
         self.displayTimer?.invalidate() // in case it's already running
-        self.displayTimer = Timer.scheduledTimer(timeInterval: 0.05, target: self, selector: #selector(updateDisplay), userInfo: nil, repeats: true)
+        self.displayTimer = Timer.scheduledTimer(timeInterval: 0.05, target: self, selector: #selector(updateTimerDisplay), userInfo: nil, repeats: true)
         self.updateButtons()
     }
     
@@ -80,14 +80,27 @@ class ViewController: UIViewController {
         timingController.pause()
         self.displayTimer?.invalidate()
         self.updateDisplay()
-        self.updateButtons()
     }
     
     var discardDisplayMinutes = 0
     
     @objc func updateDisplay() {
-        //FIXME: This should all happen in TimingController. All I need is to get the string.
-        self.valueLabel.text = timingController.displayTime
+        self.updateTimerDisplay()
+        self.updateButtons()
+    }
+    
+    var runningSessionIsRemote = false
+    
+    @objc func updateTimerDisplay() {
+        if timingController.isRunningRemotely {
+            self.valueLabel.text = timingController.remoteDisplayTime
+        } else {
+            self.valueLabel.text = timingController.localDisplayTime
+        }
+        if timingController.isRunningRemotely != self.runningSessionIsRemote {
+            self.runningSessionIsRemote = timingController.isRunningRemotely
+            self.valueLabel.textColor = (runningSessionIsRemote ? .cyan : .white)
+        }
         
         let currentSessionMinutes = Int(timingController.currentSessionSeconds / 60)
         if currentSessionMinutes >= 30 {
@@ -105,19 +118,21 @@ class ViewController: UIViewController {
     func updateButtons() {
         self.forwardButton.setTitle("forward", for: .normal)
         self.backwardButton.setTitle("backward", for: .normal)
+        var direction = timingController.direction
+
         if timingController.isRunning {
-            let button = (timingController.direction > 0 ? forwardButton : backwardButton)
+            let button = (direction > 0 ? forwardButton : backwardButton)
             button?.setTitle("pause", for: .normal)
         }
         
         let activeColor = UIColor.white
         let activeBorderWidth: CGFloat = 2
-        if timingController.direction > 0 {
+        if direction > 0 {
             self.forwardButton.setBorder(color: activeColor, width: activeBorderWidth)
         } else {
             self.forwardButton.setBorder(color: nil, width: 0)
         }
-        if timingController.direction < 0 {
+        if direction < 0 {
             self.backwardButton.setBorder(color: activeColor, width: activeBorderWidth)
         } else {
             self.backwardButton.setBorder(color: nil, width: 0)
