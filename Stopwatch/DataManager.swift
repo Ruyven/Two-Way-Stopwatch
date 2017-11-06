@@ -77,6 +77,11 @@ class DataManager {
                 try db.run(Table("devices").addColumn(.dbxSyncCursor))
                 db.userVersion = 2
             }
+            if db.userVersion < 3 {
+                // migrate to v2: add column minutes
+                try db.run(Table("sessions").addColumn(.minutes))
+                db.userVersion = 3
+            }
         } catch {
             print("Migration failed :(")
         }
@@ -90,7 +95,10 @@ class DataManager {
         self.uuid = UUIDManager.generateUUID()
         
         //TODO: I can use ListFolderLongpoll to monitor it for changes. However, I will need to store the current cursor.
-        self.dropboxSyncDownload()
+        self.dropboxSyncDownload {
+            // after syncing with Dropbox: consolidate sessions
+            self.consolidateSessions()
+        }
         
         DispatchQueue.main.async {
             self.readRemoteSessionsFromDB()
@@ -140,25 +148,18 @@ class DataManager {
         var sessions: [Session] = []
         
         for session in squery {
-            sessions.append(Session(startTime: session[.startTime], hours: session[.hours]))
+            sessions.append(Session(id: session[.id], device: session[.device_uuid], startTime: session[.startTime], minutes: minutesFromRow(session)))
         }
         
         // filter / merge sessions
         var filteredSessions = [Session]()
-        let forwardSessions = sessions.filter({$0.direction > 0})
-        let backwardSessions = sessions.filter({$0.direction < 0})
-        for _sessions in [forwardSessions, backwardSessions] {
-            var sessions = _sessions
-            while sessions.count > 0 {
-                var adjSession = sessions.removeFirst()
-                while let nextSession = sessions.first, nextSession.startTime < adjSession.endTime {
-                    if nextSession.endTime > adjSession.endTime {
-                        adjSession.endTime = nextSession.endTime
-                    }
-                    _=sessions.removeFirst()
-                }
-                filteredSessions.append(adjSession)
+        while sessions.count > 0 {
+            var adjSession = sessions.removeFirst()
+            if let nextSession = sessions.first, nextSession.startTime < adjSession.endTime {
+                // whichever way that next session goes, if it started while this session was still running, that means this session got interrupted
+                adjSession.endTime = nextSession.startTime
             }
+            filteredSessions.append(adjSession)
         }
         
         for session in filteredSessions {
@@ -212,19 +213,140 @@ class DataManager {
         }
     }
     
-    func logSession(startTime: Date, hours: Double) {
+    func logSession(startTime: Date, minutes: Double) {
         guard let db = self.openDBConnection() else {
             return
         }
         
         let sessions = Table("sessions")
         do {
-            try db.run(sessions.insert(.device_uuid <- self.uuid, .startTime <- startTime, .hours <- hours))    // note that hours might be negative. The session duration is abs(hours).
+            try db.run(sessions.insert(.device_uuid <- self.uuid, .startTime <- startTime, .minutes <- minutes, .hours <- 0))    // note that the time might be negative. The session duration is abs(minutes).
+            // Also, if .minutes is set, .hours will be ignored.
         } catch {
             print("logSession: \(error)")
         }
         
         self.dropboxSyncUpload()
+    }
+    
+    func consolidateSessions() {
+        /*
+         ~~~ pseudo code ~~~
+         read all sessions into "sessions" array
+         for each session, as long as there is a next session:
+            if session overlaps with next session:
+                mark next session as "ignore"
+                if session is my device:
+                    shorten session
+                    mark as "writeBackIfIgnored"
+                else:
+                    mark as "ignore"
+         for each session that is not my device:
+            delete from "sessions" array
+         for each session marked as "ignore" _or_ less than a week old:
+            if session has "writeBackIfIgnored":
+                write changed session duration back to database
+         make a sum of all durations of sessions that are left over
+         add that sum to my device's baseHours, in memory and in database
+         delete all those sessions from database
+         if there have been changes in sessions:
+            write back to database
+         ~~~ end code ~~~
+ */
+        guard let db = self.openDBConnection(),
+            let _ = try? self.createDeviceInDatabaseIfNeeded(db: db, uuid: self.uuid) else {
+                return
+        }
+        
+        // 1. Read all sessions
+        let sessionsQuery = Table("sessions").order(Expression<Double>.startTime.asc)
+        guard let squery = try? db.prepare(sessionsQuery) else {
+            return
+        }
+        
+        var sessions: [Session] = []
+        
+        for session in squery {
+            sessions.append(Session(id: session[.id], device: session[.device_uuid], startTime: session[.startTime], minutes: minutesFromRow(session)))
+        }
+        
+        var ignoredSessions: Set<Session> = .init()
+        var writeBackIfIgnored: Set<Session> = .init()
+        
+        //print("session duration before: \(sessions.map({$0.hours}).reduce(0,+))")
+        
+        // 2. Check for overlapping sessions
+        for (i, session) in sessions.enumerated() {
+            guard i < sessions.count - 1 else {
+                continue
+            }
+            let nextSession = sessions[i+1]
+            if nextSession.startTime < session.endTime {
+                ignoredSessions.insert(nextSession)
+                if session.device == self.uuid {
+                    var mySession = session
+                    mySession.endTime = nextSession.startTime
+                    sessions[i] = mySession
+                    //session.endTime = nextSession.startTime
+                    writeBackIfIgnored.insert(mySession)
+                } else {
+                    //#delete
+                    var mySession = session
+                    mySession.endTime = nextSession.startTime
+                    sessions[i] = mySession
+                    
+                    
+                    
+                    ignoredSessions.insert(session)
+                }
+            }
+        }
+        
+        //print("session duration after: \(sessions.map({$0.hours}).reduce(0,+))")
+        
+        // 3. clean up: only keep sessions from this device that don't have "ignore" set and are more than 1 week old, for good measure.
+        
+        while let index = sessions.index(where: { $0.device != self.uuid }) {
+            sessions.remove(at: index)
+        }
+        while let index = sessions.index(where: { ignoredSessions.contains($0) || $0.endTime.timeIntervalSinceNow > -7*86400 }) {
+            let session = sessions[index]
+            if writeBackIfIgnored.contains(session) {
+                // write shortened time back to database
+                let updateQuery = Table("sessions").where(.id == session.id).update(.minutes <- session.minutes, .hours <- 0)
+                _ = try? db.run(updateQuery)
+            }
+            sessions.remove(at: index)
+        }
+        
+        //print("sessions to consolidate: \(sessions.count)")
+        
+        if sessions.count > 0 {
+            
+            // 4. sum up all of my sessions
+            
+            do {
+                let mySessionsTotalMinutes = sessions.map({ $0.minutes }).reduce(0,+)
+                
+                var baseHours: Double = mySessionsTotalMinutes / 60
+                if let meDevice = try db.pluck(self.thisDeviceQuery) {
+                    baseHours += meDevice[.baseHours]
+                }
+                
+                // delete all of my sessions from database
+                for session in sessions {
+                    let deleteQuery = Table("sessions").where(.id == session.id).delete()
+                    try db.run(deleteQuery)
+                }
+                
+                let updateQuery = Table("devices").where(.uuid == self.uuid).update(.baseHours <- baseHours)
+                try db.run(updateQuery)
+                
+                print("Consolidated \(sessions.count) sessions!")
+            } catch {
+                print("consolidate db error: \(error)")
+            }
+        }
     }
     
     // MARK: - Dropbox Sync
@@ -315,10 +437,11 @@ class DataManager {
         }
     }
     
-    func stopRemoteSession() {
+    func pauseRemoteSession() {
+        let now = Date()
         if let (device, sessionToStop) = self.dbxRemoteSession {
             var session = sessionToStop
-            session[jk.endTime] = Date().timeIntervalSinceReferenceDate
+            session[jk.endTime] = now.timeIntervalSinceReferenceDate
             if let jsonData = try? JSONSerialization.data(withJSONObject: session, options: []) {
                 self.dropboxClient.files.upload(path: "/\(dbxActiveSessionFileName(for: device))", mode: .overwrite, input: jsonData).response { response, error in
                     print("End session remotely: \(String(describing: response)), \(String(describing: error))")
@@ -328,6 +451,9 @@ class DataManager {
             //self.remoteSessionDidStop(device: device)
             self.writeRemoteSessionsToDB()
         }
+        
+        // just to make sure the session is stopped after consolidation, even if something else goes wrong
+        self.logSession(startTime: now, minutes: 0)
     }
     
     /*func remoteSessionDidStop(device: String) {
@@ -421,7 +547,7 @@ class DataManager {
         var sessions: [Session] = []
         
         for session in squery {
-            sessions.append(Session(startTime: session[.startTime], hours: session[.hours]))
+            sessions.append(Session(id: session[.id], device: session[.device_uuid], startTime: session[.startTime], minutes: minutesFromRow(session)))
         }
         
         let myDeviceDict = [jk.uuid: uuid, jk.baseHours: baseHours, jk.sessions: sessions.map({ [jk.startTime: $0.startTime.timeIntervalSinceReferenceDate, jk.hours: $0.hours] })] as [String : Any]
@@ -445,7 +571,7 @@ class DataManager {
         }
     }
     
-    private func dropboxSyncDownload() {
+    private func dropboxSyncDownload(completion: (() -> ())? = nil) {
         // now download jsonData from all other devices
         
         // check if we have a dropbox sync cursor from last time
@@ -478,6 +604,8 @@ class DataManager {
                     TimingController.controller.baseTime = baseTime
                     NotificationCenter.default.post(name: .baseTimeUpdated, object: nil, userInfo: nil)
                 }
+                
+                completion?()
 
             }
             
@@ -590,7 +718,9 @@ class DataManager {
                     let responseMetadata = response.0
                     print(responseMetadata)
                     let fileContents = response.1
-                    print(fileContents)
+                    /*if let fileContents = String(data: data, encoding: .utf8) {
+                        print(fileContents)
+                    }*/
                     
                     guard let json = try JSONSerialization.jsonObject(with: fileContents, options: []) as? [String: Any] else {
                         return
@@ -606,8 +736,8 @@ class DataManager {
                                         endTimeStamp > startTimeStamp, // if the endTime is before the startTime, discard the session
                                         let direction = json[jk.direction] as? Double
                                     {
-                                        let hours = (endTimeStamp - startTimeStamp) / 3600 * direction
-                                        self.logSession(startTime: Date(timeIntervalSinceReferenceDate: startTimeStamp), hours: hours)
+                                        let minutes = (endTimeStamp - startTimeStamp) / 60 * direction
+                                        self.logSession(startTime: Date(timeIntervalSinceReferenceDate: startTimeStamp), minutes: minutes)
                                     }
                                     TimingController.controller.stopSessionWithoutLogging(at: Date(timeIntervalSinceReferenceDate: endTimeStamp))
                                 }
@@ -632,7 +762,8 @@ class DataManager {
                             guard let startTimeStamp = dict[jk.startTime], let hours = dict[jk.hours] else {
                                 return nil
                             }
-                            return Session(startTime: Date(timeIntervalSinceReferenceDate: startTimeStamp), hours: hours)
+                            // we don't know the session id, and it doesn't matter here either - the database will set it automatically
+                            return Session(id: -1, device: uuid, startTime: Date(timeIntervalSinceReferenceDate: startTimeStamp), minutes: hours*60)
                         })
                         
                         // now sync to database for the device in question. If any data has to be replaced, call completion(true) instead.
@@ -659,11 +790,13 @@ class DataManager {
                         for localSession in try db.prepare(deviceSessions) {
                             if let remoteIndex = remoteSessions.index(where: {$0.startTime == localSession[.startTime]}) {
                                 let remoteSession = remoteSessions[remoteIndex]
-                                if localSession[.hours] != remoteSession.hours {
+                                
+                                let minutes = minutesFromRow(localSession)
+                                if minutes != remoteSession.minutes {
                                     // update in database
                                     let updateQuery = sessionsTable
                                         .filter(.id == localSession[.id])
-                                        .update(.hours <- remoteSession.hours)
+                                        .update(.minutes <- minutes)
                                     if (try? db.run(updateQuery)) != nil {
                                         changes = true
                                     }
@@ -684,7 +817,8 @@ class DataManager {
                             let insertQuery = sessionsTable.insert(
                                 .device_uuid <- uuid,
                                 .startTime <- remoteSession.startTime,
-                                .hours <- remoteSession.hours
+                                .minutes <- remoteSession.minutes,
+                                .hours <- 0
                             )
                             if (try? db.run(insertQuery)) != nil {
                                 changes = true
@@ -728,14 +862,21 @@ extension Expression {
     static var device_uuid: Expression<String> { return Expression<String>("device_uuid") }
     static var startTime: Expression<Date> { return Expression<Date>("startTime") }
     static var hours: Expression<Double> { return Expression<Double>("hours") }
+    static var minutes: Expression<Double?> { return Expression<Double?>("minutes") }
 }
 
 struct Session {
-    var startTime: Date
-    var hours: Double
+    let id: Int
+    let device: String
+    let startTime: Date
+    var minutes: Double
+    
+    var hours: Double {
+        return self.minutes / 60
+    }
     
     var direction: Double {
-        if hours >= 0 {
+        if minutes >= 0 {
             return 1
         } else {
             return -1
@@ -743,13 +884,23 @@ struct Session {
     }
     var endTime: Date {
         get {
-            let seconds = abs(hours) * 3600
+            let seconds = abs(minutes) * 60
             return startTime.addingTimeInterval(seconds)
         }
         set {
             let seconds = newValue.timeIntervalSince(self.startTime)
-            self.hours = seconds/3600 * self.direction
+            self.minutes = seconds/60 * self.direction
         }
+    }
+}
+
+extension Session: Hashable {
+    static func ==(lhs: Session, rhs: Session) -> Bool {
+        return lhs.device == rhs.device && lhs.startTime == rhs.startTime
+    }
+    
+    var hashValue: Int {
+        return self.startTime.hashValue
     }
 }
 
@@ -766,3 +917,10 @@ extension Connection {
     }
 }
 
+fileprivate func minutesFromRow(_ row: Row) -> Double {
+    if let minutes = row[.minutes], minutes != 0 {
+        return minutes
+    } else {
+        return row[.hours] * 60
+    }
+}

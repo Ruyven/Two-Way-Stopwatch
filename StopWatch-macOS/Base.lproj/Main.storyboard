@@ -674,7 +674,7 @@
                         <outlet property="delegate" destination="Voe-Tx-rLC" id="PrD-fu-P6m"/>
                     </connections>
                 </application>
-                <customObject id="Voe-Tx-rLC" customClass="AppDelegate" customModule="TwoWayStopwatch" customModuleProvider="target"/>
+                <customObject id="Voe-Tx-rLC" customClass="AppDelegate" customModule="Two_Way_Stopwatch" customModuleProvider="target"/>
                 <customObject id="YLy-65-1bz" customClass="NSFontManager"/>
                 <customObject id="Ady-hI-5gd" userLabel="First Responder" customClass="NSResponder" sceneMemberID="firstResponder"/>
             </objects>
@@ -704,39 +704,19 @@
         <!--View Controller-->
         <scene sceneID="hIz-AP-VOD">
             <objects>
-                <viewController id="XfG-lQ-9wD" customClass="ViewController" customModule="TwoWayStopwatch" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController id="XfG-lQ-9wD" customClass="ViewController" customModule="Two_Way_Stopwatch" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" wantsLayer="YES" id="m2S-Jp-Qdl">
-                        <rect key="frame" x="0.0" y="0.0" width="295" height="137"/>
+                        <rect key="frame" x="0.0" y="0.0" width="295" height="136"/>
                         <autoresizingMask key="autoresizingMask"/>
                         <subviews>
                             <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="rhV-rs-PRh">
-                                <rect key="frame" x="14" y="13" width="90" height="32"/>
+                                <rect key="frame" x="14" y="12" width="134" height="32"/>
                                 <buttonCell key="cell" type="push" title="Forward" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="nCr-UX-DxU">
                                     <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                                     <font key="font" metaFont="system"/>
                                 </buttonCell>
                                 <connections>
                                     <action selector="startForward:" target="XfG-lQ-9wD" id="I3n-R1-pSM"/>
-                                </connections>
-                            </button>
-                            <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="4zr-0F-oOt">
-                                <rect key="frame" x="104" y="13" width="100" height="32"/>
-                                <buttonCell key="cell" type="push" title="Backward" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="LdH-uy-70b">
-                                    <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
-                                    <font key="font" metaFont="system"/>
-                                </buttonCell>
-                                <connections>
-                                    <action selector="startBackward:" target="XfG-lQ-9wD" id="mqf-fn-shY"/>
-                                </connections>
-                            </button>
-                            <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="N6W-Uc-WVo">
-                                <rect key="frame" x="204" y="13" width="77" height="32"/>
-                                <buttonCell key="cell" type="push" title="Pause" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="v2G-iR-O1x">
-                                    <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
-                                    <font key="font" metaFont="system"/>
-                                </buttonCell>
-                                <connections>
-                                    <action selector="pause:" target="XfG-lQ-9wD" id="95X-3X-XU5"/>
                                 </connections>
                             </button>
                             <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="4Ax-uI-sZj">
@@ -747,27 +727,59 @@
                                     <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                 </textFieldCell>
                             </textField>
+                            <customView translatesAutoresizingMaskIntoConstraints="NO" id="UXg-vb-pWb">
+                                <rect key="frame" x="20" y="117" width="255" height="19"/>
+                            </customView>
+                            <customView translatesAutoresizingMaskIntoConstraints="NO" id="6Hh-T5-dvs">
+                                <rect key="frame" x="20" y="40" width="255" height="18"/>
+                            </customView>
+                            <customView translatesAutoresizingMaskIntoConstraints="NO" id="9Mx-0f-zGK">
+                                <rect key="frame" x="20" y="0.0" width="255" height="19"/>
+                            </customView>
+                            <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="4zr-0F-oOt">
+                                <rect key="frame" x="148" y="12" width="133" height="32"/>
+                                <buttonCell key="cell" type="push" title="Backward" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="LdH-uy-70b">
+                                    <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                    <font key="font" metaFont="system"/>
+                                </buttonCell>
+                                <connections>
+                                    <action selector="startBackward:" target="XfG-lQ-9wD" id="mqf-fn-shY"/>
+                                </connections>
+                            </button>
                         </subviews>
                         <constraints>
-                            <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="N6W-Uc-WVo" secondAttribute="trailing" constant="20" id="MmW-bb-TuN"/>
-                            <constraint firstItem="4Ax-uI-sZj" firstAttribute="top" secondItem="m2S-Jp-Qdl" secondAttribute="top" constant="20" id="QrA-0Z-QR7"/>
-                            <constraint firstItem="N6W-Uc-WVo" firstAttribute="leading" secondItem="4zr-0F-oOt" secondAttribute="trailing" constant="12" id="Y0c-JQ-ZWQ"/>
-                            <constraint firstAttribute="bottom" secondItem="rhV-rs-PRh" secondAttribute="bottom" constant="20" id="ZTi-MQ-5b8"/>
+                            <constraint firstItem="UXg-vb-pWb" firstAttribute="leading" secondItem="4Ax-uI-sZj" secondAttribute="leading" id="3Pc-o5-gyn"/>
+                            <constraint firstAttribute="bottom" secondItem="9Mx-0f-zGK" secondAttribute="bottom" id="4Se-o2-ZFf"/>
+                            <constraint firstItem="9Mx-0f-zGK" firstAttribute="leading" secondItem="6Hh-T5-dvs" secondAttribute="leading" id="69W-uB-uq6"/>
+                            <constraint firstAttribute="trailing" secondItem="4zr-0F-oOt" secondAttribute="trailing" constant="20" id="FFy-DQ-xqM"/>
+                            <constraint firstItem="6Hh-T5-dvs" firstAttribute="top" secondItem="4Ax-uI-sZj" secondAttribute="bottom" id="PfR-1B-H7H"/>
+                            <constraint firstItem="4zr-0F-oOt" firstAttribute="width" secondItem="rhV-rs-PRh" secondAttribute="width" id="SsD-zX-PsH"/>
+                            <constraint firstItem="6Hh-T5-dvs" firstAttribute="leading" secondItem="4Ax-uI-sZj" secondAttribute="leading" id="T38-Ck-hnC"/>
+                            <constraint firstItem="9Mx-0f-zGK" firstAttribute="height" secondItem="6Hh-T5-dvs" secondAttribute="height" id="TFO-V6-k6G"/>
+                            <constraint firstItem="UXg-vb-pWb" firstAttribute="height" secondItem="6Hh-T5-dvs" secondAttribute="height" id="YBH-US-yfu"/>
+                            <constraint firstItem="9Mx-0f-zGK" firstAttribute="trailing" secondItem="6Hh-T5-dvs" secondAttribute="trailing" id="ZVn-FA-ngo"/>
+                            <constraint firstItem="6Hh-T5-dvs" firstAttribute="trailing" secondItem="4Ax-uI-sZj" secondAttribute="trailing" id="bvA-Lu-Hcx"/>
+                            <constraint firstItem="4Ax-uI-sZj" firstAttribute="top" secondItem="UXg-vb-pWb" secondAttribute="bottom" id="c0W-uy-fUM"/>
+                            <constraint firstItem="UXg-vb-pWb" firstAttribute="top" secondItem="m2S-Jp-Qdl" secondAttribute="top" id="c4w-qB-gpS"/>
                             <constraint firstItem="4zr-0F-oOt" firstAttribute="leading" secondItem="rhV-rs-PRh" secondAttribute="trailing" constant="12" id="c8H-Hb-5i3"/>
                             <constraint firstItem="4Ax-uI-sZj" firstAttribute="leading" secondItem="m2S-Jp-Qdl" secondAttribute="leading" constant="20" id="d0I-ix-S4c"/>
                             <constraint firstItem="rhV-rs-PRh" firstAttribute="leading" secondItem="m2S-Jp-Qdl" secondAttribute="leading" constant="20" id="d58-HF-uHG"/>
+                            <constraint firstItem="UXg-vb-pWb" firstAttribute="trailing" secondItem="4Ax-uI-sZj" secondAttribute="trailing" id="h6b-ZA-ePo"/>
                             <constraint firstItem="4zr-0F-oOt" firstAttribute="centerY" secondItem="rhV-rs-PRh" secondAttribute="centerY" id="hBO-BB-6zH"/>
                             <constraint firstAttribute="trailing" secondItem="4Ax-uI-sZj" secondAttribute="trailing" constant="20" id="kme-ta-gGV"/>
-                            <constraint firstItem="N6W-Uc-WVo" firstAttribute="centerY" secondItem="4zr-0F-oOt" secondAttribute="centerY" id="r8k-F0-MDC"/>
+                            <constraint firstItem="rhV-rs-PRh" firstAttribute="top" secondItem="6Hh-T5-dvs" secondAttribute="bottom" id="mka-WB-N3A"/>
+                            <constraint firstItem="9Mx-0f-zGK" firstAttribute="top" secondItem="rhV-rs-PRh" secondAttribute="bottom" id="ohy-KY-hoa"/>
                         </constraints>
                     </view>
                     <connections>
+                        <outlet property="backwardButton" destination="4zr-0F-oOt" id="Qtz-KK-27g"/>
+                        <outlet property="forwardButton" destination="rhV-rs-PRh" id="1t8-Nv-DOj"/>
                         <outlet property="valueLabel" destination="4Ax-uI-sZj" id="02G-I1-g2F"/>
                     </connections>
                 </viewController>
                 <customObject id="rPt-NT-nkU" userLabel="First Responder" customClass="NSResponder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="109.5" y="679.5"/>
+            <point key="canvasLocation" x="109.5" y="679"/>
         </scene>
     </scenes>
 </document>

@@ -90,7 +90,7 @@ class TimingController {
     func pause() {
         if self.isRunningLocally {
             // is running locally
-            DataManager.manager.logSession(startTime: self.localStartTime, hours: self.currentSessionSeconds/3600)
+            DataManager.manager.logSession(startTime: self.localStartTime, minutes: self.currentSessionSeconds/60)
             DataManager.manager.stopActiveSession()
             
             self.baseTime = self.currentTime
@@ -109,7 +109,7 @@ class TimingController {
     func stopRemoteSession() {
         self.baseTime = self.currentRemoteTime
         self.remoteDirection = 0
-        DataManager.manager.stopRemoteSession()
+        DataManager.manager.pauseRemoteSession()
     }
     
     func stopSessionWithoutLogging(at endTime: Date) {
