@@ -137,6 +137,7 @@ class DataManager {
         
         for device in dquery {
             totalTime += device[.baseHours]
+            //print("#debug\t\(totalTime)\tdevice \(device[.uuid])\t\(device[.baseHours])h")
         }
         
         // now go through the sessions
@@ -147,8 +148,9 @@ class DataManager {
         
         var sessions: [Session] = []
         
-        for session in squery {
-            sessions.append(Session(id: session[.id], device: session[.device_uuid], startTime: session[.startTime], minutes: minutesFromRow(session)))
+        for dbsession in squery {
+            let session = Session(id: dbsession[.id], device: dbsession[.device_uuid], startTime: dbsession[.startTime], minutes: minutesFromRow(dbsession))
+            sessions.append(session)
         }
         
         // filter / merge sessions
@@ -164,6 +166,7 @@ class DataManager {
         
         for session in filteredSessions {
             totalTime += session.hours
+            //print("#debug\t\(totalTime)\tsession\t\(session)")
         }
         
         return totalTime
@@ -384,7 +387,7 @@ class DataManager {
     
     // jk = JSON Key
     struct jk {
-        static let uuid = "uuid", baseHours = "baseHours", sessions = "sessions", startTime = "startTime", endTime = "endTime", hours = "hours", direction = "direction"
+        static let uuid = "uuid", baseHours = "baseHours", sessions = "sessions", startTime = "startTime", endTime = "endTime", minutes = "minutes", direction = "direction"
     }
     
     // MARK: active session
@@ -407,7 +410,7 @@ class DataManager {
         // if any session is already running: pause it
         for (key, value) in self.dbxActiveSessions {
             if value[jk.endTime] as? Int == nil, value[jk.uuid] as? String != self.uuid {
-                self.dbxActiveSessions[key]?[jk.endTime] = startTime.timeIntervalSinceReferenceDate
+                self.dbxActiveSessions[key]?[jk.endTime] = startTime.timeIntervalSince1970
                 syncSessions.append(key)
             }
         }
@@ -417,7 +420,7 @@ class DataManager {
         }
         
         syncSessions.append(self.uuid)
-        let newSession = [jk.startTime: startTime.timeIntervalSinceReferenceDate, jk.direction: direction] as [String : Any]
+        let newSession = [jk.startTime: startTime.timeIntervalSince1970, jk.direction: direction] as [String : Any]
         self.dbxActiveSessions[self.uuid] = newSession
         
         for key in syncSessions {
@@ -441,7 +444,7 @@ class DataManager {
         let now = Date()
         if let (device, sessionToStop) = self.dbxRemoteSession {
             var session = sessionToStop
-            session[jk.endTime] = now.timeIntervalSinceReferenceDate
+            session[jk.endTime] = now.timeIntervalSince1970
             if let jsonData = try? JSONSerialization.data(withJSONObject: session, options: []) {
                 self.dropboxClient.files.upload(path: "/\(dbxActiveSessionFileName(for: device))", mode: .overwrite, input: jsonData).response { response, error in
                     print("End session remotely: \(String(describing: response)), \(String(describing: error))")
@@ -478,7 +481,7 @@ class DataManager {
                     let startTimeStamp = session[jk.startTime] as? Double,
                     let remoteDirection = session[jk.direction] as? Int
                 {
-                    let remoteStartTime = Date(timeIntervalSinceReferenceDate: startTimeStamp)
+                    let remoteStartTime = Date(timeIntervalSince1970: startTimeStamp)
                     if remoteStartTime != device[.activeSessionSince] || remoteDirection != device[.activeSessionDirection] {
                         updateDeviceWith = (remoteStartTime, remoteDirection)
                     }
@@ -512,7 +515,7 @@ class DataManager {
                     continue
                 }
                 remoteSessionIsActive = true
-                activeSessions[device[.uuid]] = [jk.startTime: startTime.timeIntervalSinceReferenceDate, jk.direction: direction]
+                activeSessions[device[.uuid]] = [jk.startTime: startTime.timeIntervalSince1970, jk.direction: direction]
             }
             self.dbxActiveSessions = activeSessions
             if remoteSessionIsActive {
@@ -550,7 +553,7 @@ class DataManager {
             sessions.append(Session(id: session[.id], device: session[.device_uuid], startTime: session[.startTime], minutes: minutesFromRow(session)))
         }
         
-        let myDeviceDict = [jk.uuid: uuid, jk.baseHours: baseHours, jk.sessions: sessions.map({ [jk.startTime: $0.startTime.timeIntervalSinceReferenceDate, jk.hours: $0.hours] })] as [String : Any]
+        let myDeviceDict = [jk.uuid: uuid, jk.baseHours: baseHours, jk.sessions: sessions.map({ [jk.startTime: $0.startTime.timeIntervalSince1970, jk.minutes: $0.minutes] })] as [String : Any]
         
         guard let jsonData = try? JSONSerialization.data(withJSONObject: myDeviceDict, options: []) else {
             return      // well that didn't work
@@ -628,13 +631,13 @@ class DataManager {
             if TimingController.controller.isRunningLocally {
                 // the remote session needs to end!
                 let localStartTime = TimingController.controller.localStartTime
-                if let remoteStartTimeStamp = session[jk.startTime] as? Double, localStartTime.timeIntervalSinceReferenceDate > remoteStartTimeStamp {
+                if let remoteStartTimeStamp = session[jk.startTime] as? Double, localStartTime.timeIntervalSince1970 > remoteStartTimeStamp {
                     // if the remote session started after the local one, we're not going in here because it's not the remote one that needs to end.
                     remoteSessionShouldEnd = true
                     remoteSessionsChanged = true
                     
                     var endedSession = session
-                    endedSession[jk.endTime] = localStartTime.timeIntervalSinceReferenceDate
+                    endedSession[jk.endTime] = localStartTime.timeIntervalSince1970
                     if let jsonData = try? JSONSerialization.data(withJSONObject: endedSession, options: []) {
                         self.dropboxClient.files.upload(path: "/\(self.dbxActiveSessionFileName(for: device))", mode: .overwrite, input: jsonData).response { response, error in
                             print("End session remotely: \(String(describing: response)), \(String(describing: error))")
@@ -652,7 +655,7 @@ class DataManager {
                         rdDouble = Double(rdInt)
                     }
                     if let remoteDirection = rdDouble {
-                        TimingController.controller.remoteStartTime = Date(timeIntervalSinceReferenceDate: remoteStartTimeStamp)
+                        TimingController.controller.remoteStartTime = Date(timeIntervalSince1970: remoteStartTimeStamp)
                         TimingController.controller.remoteDirection = remoteDirection
                         NotificationCenter.default.post(name: .startUpdatingDisplay, object: nil)
                     }
@@ -737,9 +740,9 @@ class DataManager {
                                         let direction = json[jk.direction] as? Double
                                     {
                                         let minutes = (endTimeStamp - startTimeStamp) / 60 * direction
-                                        self.logSession(startTime: Date(timeIntervalSinceReferenceDate: startTimeStamp), minutes: minutes)
+                                        self.logSession(startTime: Date(timeIntervalSince1970: startTimeStamp), minutes: minutes)
                                     }
-                                    TimingController.controller.stopSessionWithoutLogging(at: Date(timeIntervalSinceReferenceDate: endTimeStamp))
+                                    TimingController.controller.stopSessionWithoutLogging(at: Date(timeIntervalSince1970: endTimeStamp))
                                 }
                             } else {
                                 // or if the local session is not running. In that case, it just needs to be deleted.
@@ -758,12 +761,12 @@ class DataManager {
                             let sessionsDictArray = json[jk.sessions] as? [[String: Double]] else {
                                 return
                         }
-                        var remoteSessions = sessionsDictArray.flatMap({ dict -> Session? in
-                            guard let startTimeStamp = dict[jk.startTime], let hours = dict[jk.hours] else {
+                        var remoteSessions = sessionsDictArray.compactMap({ dict -> Session? in
+                            guard let startTimeStamp = dict[jk.startTime], let minutes = dict[jk.minutes] else {
                                 return nil
                             }
                             // we don't know the session id, and it doesn't matter here either - the database will set it automatically
-                            return Session(id: -1, device: uuid, startTime: Date(timeIntervalSinceReferenceDate: startTimeStamp), minutes: hours*60)
+                            return Session(id: -1, device: uuid, startTime: Date(timeIntervalSince1970: startTimeStamp), minutes: minutes)
                         })
                         
                         // now sync to database for the device in question. If any data has to be replaced, call completion(true) instead.
@@ -796,7 +799,7 @@ class DataManager {
                                     // update in database
                                     let updateQuery = sessionsTable
                                         .filter(.id == localSession[.id])
-                                        .update(.minutes <- minutes)
+                                        .update(.minutes <- remoteSession.minutes)
                                     if (try? db.run(updateQuery)) != nil {
                                         changes = true
                                     }
@@ -901,6 +904,12 @@ extension Session: Hashable {
     
     var hashValue: Int {
         return self.startTime.hashValue
+    }
+}
+
+extension Session: CustomStringConvertible {
+    var description: String {
+        return "\(startTime)\t\(minutes)m\t(\(device))"
     }
 }
 

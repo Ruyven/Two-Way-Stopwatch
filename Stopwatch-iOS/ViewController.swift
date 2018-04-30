@@ -118,7 +118,7 @@ class ViewController: UIViewController {
     func updateButtons() {
         self.forwardButton.setTitle("forward", for: .normal)
         self.backwardButton.setTitle("backward", for: .normal)
-        var direction = timingController.direction
+        let direction = timingController.direction
 
         if timingController.isRunning {
             let button = (direction > 0 ? forwardButton : backwardButton)

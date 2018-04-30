@@ -19,7 +19,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Override point for customization after application launch.
         
         UNUserNotificationCenter.current().requestAuthorization(options: UNAuthorizationOptions.badge) { (success, error) in
-            print("success: \(success), error: \(error)")
+            if !success {
+                print("UserNotification error: \(error)")
+            }
         }
         
         return true
