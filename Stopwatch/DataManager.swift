@@ -6,7 +6,10 @@
 //  Copyright © 2017 me. All rights reserved.
 //
 
-//import IOKit
+//TODO: Use oauth to get dropbox access token for users.
+// So far, I've only used an access token for my own account:
+// https://blogs.dropbox.com/developers/2014/05/generate-an-access-token-for-your-own-account/
+let DROPBOX_ACCESS_TOKEN = "DROPBOX_ACCESS_TOKEN"
 
 import SQLite
 import SwiftyDropbox
@@ -378,7 +381,7 @@ class DataManager {
         var client: DropboxClient! = DropboxClientsManager.authorizedClient
         
         if client == nil {
-            client = DropboxClient(accessToken: "DROPBOX_ACCESS_TOKEN") // insert real token here
+            client = DropboxClient(accessToken: DROPBOX_ACCESS_TOKEN)
             DropboxClientsManager.authorizedClient = client
         }
         
