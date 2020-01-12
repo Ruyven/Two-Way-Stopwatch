@@ -17,7 +17,8 @@ Here's the current way to set up Dropbox sync:
 - Choose "Dropbox API"
 - Choose "App folder"
 - Name your app, e.g. TwoWayStopwatch
-- [Generate an access token](https://blogs.dropbox.com/developers/2014/05/generate-an-access-token-for-your-own-account/) to work with your own account.
+- [Generate an access token](https://blogs.dropbox.com/developers/2014/05/generate-an-access-token-for-your-own-account/) to work with your own account
+- Add the token as DROPBOX_ACCESS_TOKEN in DataManager.swift.
 
 To do:
 ------
